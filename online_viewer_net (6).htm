@@ -60,6 +60,14 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 
     <script>
+        // --- Exact Streetlight Config Provided ---
+        const streetlightConfig = {
+            "scale": 0.02,
+            "left": { "x": -10.5, "y": 15, "z": 0, "rotY": 0 },
+            "right": { "x": 10.5, "y": 15, "z": 0, "rotY": 180 },
+            "spacing": 122.5
+        };
+
         // --- Scene Setup with Warm Sunset Atmosphere ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xd97757); 
@@ -146,8 +154,8 @@
         );
 
         // --- Elevated Road & Bridge Setup ---
-        const roadWidth = 15; 
-        const roadLength = 2500;
+        const roadWidth = 22; // Wider to comfortably house x = ±10.5
+        const roadLength = 3500;
         const bridgeHeight = 15; 
 
         const roadMat = new THREE.MeshStandardMaterial({ 
@@ -163,7 +171,7 @@
         road.position.set(0, bridgeHeight, 0);
         scene.add(road);
 
-        // Bridge Side Fences (Purely visual, wider bounds so they never slow down the car)
+        // Bridge Side Fences
         const fenceMat = new THREE.MeshStandardMaterial({ color: 0x666666 });
         const fenceGeo = new THREE.BoxGeometry(0.5, 1.5, roadLength);
         
@@ -249,11 +257,9 @@
             }
         });
 
-        // --- Load Street Light .GLB Model from Local Folder (street_light.glb) ---
+        // --- Load Street Light .GLB Model with EXACT User Config ---
         const lightPoleGroup = [];
-        const lightSpacing = 50;
-        const totalLightPoles = 60;
-
+        const totalLightPolesPerSide = 35;
         const gltfLoader = new THREE.GLTFLoader();
         const modelUrl = './street_light.glb'; 
 
@@ -262,21 +268,36 @@
             setTimeout(() => document.getElementById('loader').remove(), 500);
 
             const baseModel = gltf.scene;
-            baseModel.scale.set(1, 1, 1);
+            baseModel.scale.set(
+                streetlightConfig.scale, 
+                streetlightConfig.scale, 
+                streetlightConfig.scale
+            );
 
-            for (let i = 0; i < totalLightPoles; i++) {
-                [-roadWidth / 2 - 1.0, roadWidth / 2 + 1.0].forEach(xPos => {
-                    const zPos = (i * lightSpacing) - (totalLightPoles * lightSpacing / 2);
-                    const isLeft = xPos < 0;
+            for (let i = 0; i < totalLightPolesPerSide; i++) {
+                const zOffset = (i * streetlightConfig.spacing) - (totalLightPolesPerSide * streetlightConfig.spacing / 2);
 
-                    const lightInstance = baseModel.clone();
-                    lightInstance.position.set(xPos, bridgeHeight, zPos);
-                    
-                    lightInstance.rotation.y = isLeft ? Math.PI / 2 : -Math.PI / 2;
+                // --- LEFT INSTANCE ---
+                const leftInstance = baseModel.clone();
+                leftInstance.position.set(
+                    streetlightConfig.left.x, 
+                    bridgeHeight + streetlightConfig.left.y, 
+                    zOffset + streetlightConfig.left.z
+                );
+                leftInstance.rotation.y = THREE.MathUtils.degToRad(streetlightConfig.left.rotY);
+                scene.add(leftInstance);
+                lightPoleGroup.push({ mesh: leftInstance, baseZ: zOffset });
 
-                    scene.add(lightInstance);
-                    lightPoleGroup.push({ mesh: lightInstance, originalZ: zPos });
-                });
+                // --- RIGHT INSTANCE ---
+                const rightInstance = baseModel.clone();
+                rightInstance.position.set(
+                    streetlightConfig.right.x, 
+                    bridgeHeight + streetlightConfig.right.y, 
+                    zOffset + streetlightConfig.right.z
+                );
+                rightInstance.rotation.y = THREE.MathUtils.degToRad(streetlightConfig.right.rotY);
+                scene.add(rightInstance);
+                lightPoleGroup.push({ mesh: rightInstance, baseZ: zOffset });
             }
         }, (xhr) => {
             if (xhr.total) {
@@ -288,18 +309,16 @@
             document.getElementById('loader').innerText = 'Model failed to load. Check file name.';
             setTimeout(() => document.getElementById('loader').remove(), 2000);
 
-            for (let i = 0; i < totalLightPoles; i++) {
-                [-roadWidth / 2 - 0.75, roadWidth / 2 + 0.75].forEach(xPos => {
-                    const zPos = (i * lightSpacing) - (totalLightPoles * lightSpacing / 2);
-                    const isLeft = xPos < 0;
+            for (let i = 0; i < totalLightPolesPerSide; i++) {
+                const zOffset = (i * streetlightConfig.spacing) - (totalLightPolesPerSide * streetlightConfig.spacing / 2);
+                const poleMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 });
+                const postGeo = new THREE.BoxGeometry(0.3, 7, 0.3);
 
-                    const poleMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 });
-                    const postGeo = new THREE.BoxGeometry(0.3, 7, 0.3);
+                [streetlightConfig.left.x, streetlightConfig.right.x].forEach(xPos => {
                     const post = new THREE.Mesh(postGeo, poleMat);
-                    post.position.set(xPos, bridgeHeight + 3.5, zPos);
+                    post.position.set(xPos, bridgeHeight + 3.5, zOffset);
                     scene.add(post);
-
-                    lightPoleGroup.push({ mesh: post, originalZ: zPos });
+                    lightPoleGroup.push({ mesh: post, baseZ: zOffset });
                 });
             }
         });
@@ -434,12 +453,12 @@
                 }
             });
 
+            const totalSpanLights = totalLightPolesPerSide * streetlightConfig.spacing;
             lightPoleGroup.forEach(l => {
-                const totalSpan = totalLightPoles * lightSpacing;
-                if (l.mesh.position.z > car.position.z + 150) {
-                    l.mesh.position.z -= totalSpan;
-                } else if (l.mesh.position.z < car.position.z - totalSpan + 150) {
-                    l.mesh.position.z += totalSpan;
+                if (l.mesh.position.z > car.position.z + 200) {
+                    l.mesh.position.z -= totalSpanLights;
+                } else if (l.mesh.position.z < car.position.z - totalSpanLights + 200) {
+                    l.mesh.position.z += totalSpanLights;
                 }
             });
 
