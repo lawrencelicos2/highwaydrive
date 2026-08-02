@@ -60,7 +60,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 
     <script>
-        // --- Updated Streetlight Config (y lowered by 15, x set to -14 and 14) ---
+        // --- Updated Streetlight Config ---
         const streetlightConfig = {
             "scale": 0.02,
             "left": { "x": -14, "y": 15 - 15, "z": 0, "rotY": 0 },
@@ -153,8 +153,8 @@
             }
         );
 
-        // --- Elevated Road & Bridge Setup ---
-        const roadWidth = 30; // Expanded to safely fit x = ±14 light positions
+        // --- Elevated Road & Bridge Setup (Road Width reduced by another 3, from 24 down to 21) ---
+        const roadWidth = 21; 
         const roadLength = 3500;
         const bridgeHeight = 15; 
 
@@ -191,7 +191,7 @@
         const totalPillars = 40;
 
         for (let i = 0; i < totalPillars; i++) {
-            [-10, 10].forEach(xOffset => {
+            [-roadWidth / 2 + 2, roadWidth / 2 - 2].forEach(xOffset => {
                 const pillar = new THREE.Mesh(pillarGeo, pillarMat);
                 const zPos = (i * pillarSpacing) - (totalPillars * pillarSpacing / 2);
                 pillar.position.set(xOffset, bridgeHeight / 2, zPos);
@@ -257,7 +257,7 @@
             }
         });
 
-        // --- Load Street Light .GLB Model with Lowered Y and Adjusted X ---
+        // --- Load Street Light .GLB Model ---
         const lightPoleGroup = [];
         const totalLightPolesPerSide = 35;
         const gltfLoader = new THREE.GLTFLoader();
