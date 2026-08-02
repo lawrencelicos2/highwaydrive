@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Elevated Highway Car Sim - Debug Mode</title>
+    <title>3D Elevated Highway Car Sim - Unrestricted Debug Mode</title>
     <style>
         body {
             margin: 0;
@@ -51,12 +51,12 @@
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.9);
             border: 1px solid #444;
             padding: 15px;
             border-radius: 8px;
             color: #fff;
-            width: 300px;
+            width: 320px;
             max-height: 90vh;
             overflow-y: auto;
             font-size: 12px;
@@ -79,21 +79,23 @@
             margin-bottom: 3px;
             color: #ccc;
         }
-        .control-group input, .control-group select {
-            width: 100%;
-            background: #222;
-            border: 1px solid #555;
-            color: #fff;
-            padding: 5px;
-            border-radius: 4px;
-            box-sizing: border-box;
+        .input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
         .control-group input[type="range"] {
-            padding: 0;
+            flex: 1;
         }
-        .value-display {
-            float: right;
+        .control-group input[type="text"] {
+            width: 75px;
+            background: #222;
+            border: 1px solid #555;
             color: #ffcc00;
+            padding: 4px;
+            text-align: right;
+            border-radius: 4px;
+            font-weight: bold;
         }
         #export-btn {
             background: #28a745;
@@ -115,59 +117,89 @@
 
     <div id="loader">Loading street_light.glb Model...</div>
     <div id="hud">Mode: <span id="mode-status" style="color: #ffcc00;">DEBUG FLYING CAM</span> | Press <strong>F</strong> to toggle Drive/Fly</div>
-    <div id="instructions">Use <strong>W/A/S/D + Space/Shift</strong> to Fly in Debug Mode. Adjust parameters in the top-right panel.</div>
+    <div id="instructions">Use <strong>W/A/S/D + Space/Shift</strong> to Fly in Debug Mode. Edit any input box freely with exact numbers.</div>
 
     <!-- Debug Panel -->
     <div id="debug-panel">
-        <h3>🔧 Streetlight Inspector</h3>
+        <h3>🔧 Unrestricted Inspector</h3>
         
         <div class="control-group">
-            <label>Global Scale <span id="val-scale" class="value-display">1.0</span></label>
-            <input type="range" id="input-scale" min="0.1" max="5.0" step="0.05" value="1.0">
+            <label>Global Scale</label>
+            <div class="input-row">
+                <input type="range" id="range-scale" min="0.01" max="10" step="0.01" value="1.0">
+                <input type="text" id="text-scale" value="1.0">
+            </div>
         </div>
 
         <hr style="border-color: #444; margin: 10px 0;">
         <h4 style="margin:5px 0; color:#aaa;">Left Side Controls</h4>
         <div class="control-group">
-            <label>Offset X <span id="val-lx" class="value-display">-8.5</span></label>
-            <input type="range" id="input-lx" min="-25" max="0" step="0.25" value="-8.5">
+            <label>Offset X</label>
+            <div class="input-row">
+                <input type="range" id="range-lx" min="-50" max="50" step="0.1" value="-8.5">
+                <input type="text" id="text-lx" value="-8.5">
+            </div>
         </div>
         <div class="control-group">
-            <label>Offset Y (Height) <span id="val-ly" class="value-display">15.0</span></label>
-            <input type="range" id="input-ly" min="0" max="30" step="0.25" value="15.0">
+            <label>Offset Y (Height)</label>
+            <div class="input-row">
+                <input type="range" id="range-ly" min="-50" max="100" step="0.1" value="15.0">
+                <input type="text" id="text-ly" value="15.0">
+            </div>
         </div>
         <div class="control-group">
-            <label>Offset Z <span id="val-lz" class="value-display">0.0</span></label>
-            <input type="range" id="input-lz" min="-10" max="10" step="0.25" value="0.0">
+            <label>Offset Z</label>
+            <div class="input-row">
+                <input type="range" id="range-lz" min="-50" max="50" step="0.1" value="0.0">
+                <input type="text" id="text-lz" value="0.0">
+            </div>
         </div>
         <div class="control-group">
-            <label>Rotation Y (Deg) <span id="val-lrot" class="value-display">90</span></label>
-            <input type="range" id="input-lrot" min="0" max="360" step="5" value="90">
+            <label>Rotation Y (0 - 360°)</label>
+            <div class="input-row">
+                <input type="range" id="range-lrot" min="0" max="360" step="1" value="90">
+                <input type="text" id="text-lrot" value="90">
+            </div>
         </div>
 
         <hr style="border-color: #444; margin: 10px 0;">
         <h4 style="margin:5px 0; color:#aaa;">Right Side Controls</h4>
         <div class="control-group">
-            <label>Offset X <span id="val-rx" class="value-display">8.5</span></label>
-            <input type="range" id="input-rx" min="0" max="25" step="0.25" value="8.5">
+            <label>Offset X</label>
+            <div class="input-row">
+                <input type="range" id="range-rx" min="-50" max="50" step="0.1" value="8.5">
+                <input type="text" id="text-rx" value="8.5">
+            </div>
         </div>
         <div class="control-group">
-            <label>Offset Y (Height) <span id="val-ry" class="value-display">15.0</span></label>
-            <input type="range" id="input-ry" min="0" max="30" step="0.25" value="15.0">
+            <label>Offset Y (Height)</label>
+            <div class="input-row">
+                <input type="range" id="range-ry" min="-50" max="100" step="0.1" value="15.0">
+                <input type="text" id="text-ry" value="15.0">
+            </div>
         </div>
         <div class="control-group">
-            <label>Offset Z <span id="val-rz" class="value-display">0.0</span></label>
-            <input type="range" id="input-rz" min="-10" max="10" step="0.25" value="0.0">
+            <label>Offset Z</label>
+            <div class="input-row">
+                <input type="range" id="range-rz" min="-50" max="50" step="0.1" value="0.0">
+                <input type="text" id="text-rz" value="0.0">
+            </div>
         </div>
         <div class="control-group">
-            <label>Rotation Y (Deg) <span id="val-rrot" class="value-display">-90</span></label>
-            <input type="range" id="input-rrot" min="0" max="360" step="5" value="270">
+            <label>Rotation Y (0 - 360°)</label>
+            <div class="input-row">
+                <input type="range" id="range-rrot" min="0" max="360" step="1" value="270">
+                <input type="text" id="text-rrot" value="270">
+            </div>
         </div>
 
         <hr style="border-color: #444; margin: 10px 0;">
         <div class="control-group">
-            <label>Loop / Spacing Distance <span id="val-spacing" class="value-display">50</span></label>
-            <input type="range" id="input-spacing" min="10" max="200" step="5" value="50">
+            <label>Loop / Spacing Distance</label>
+            <div class="input-row">
+                <input type="range" id="range-spacing" min="5" max="500" step="1" value="50">
+                <input type="text" id="text-spacing" value="50">
+            </div>
         </div>
 
         <button id="export-btn">📋 Copy Settings to Clipboard</button>
@@ -179,32 +211,18 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 
     <script>
-        // --- Scene Setup with Warm Sunset Atmosphere ---
+        // --- Scene Setup ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xd97757); 
         scene.fog = new THREE.FogExp2(0xd97757, 0.0018); 
 
-        const cloudGeo = new THREE.PlaneGeometry(6000, 6000);
-        const cloudMat = new THREE.MeshStandardMaterial({ 
-            color: 0x8c4b5e, 
-            transparent: true, 
-            opacity: 0.4, 
-            depthWrite: false 
-        });
-        const cloudSky = new THREE.Mesh(cloudGeo, cloudMat);
-        cloudSky.rotation.x = Math.PI / 2;
-        cloudSky.position.set(0, 400, 0);
-        scene.add(cloudSky);
-
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3000);
-        
         const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.body.appendChild(renderer.domElement);
 
-        const ambientLight = new THREE.AmbientLight(0xffb380, 0.7);
-        scene.add(ambientLight);
+        scene.add(new THREE.AmbientLight(0xffb380, 0.7));
         const directionalLight = new THREE.DirectionalLight(0xff6600, 0.9);
         directionalLight.position.set(100, 30, 50);
         scene.add(directionalLight);
@@ -214,11 +232,10 @@
         const flyCam = {
             position: new THREE.Vector3(0, 25, -40),
             rotationX: 0,
-            rotationY: 0,
-            speed: 1.2
+            rotationY: 0
         };
 
-        // --- Live Configuration State (Bindable via UI) ---
+        // --- Live Configuration State ---
         const config = {
             scale: 1.0,
             left: { x: -8.5, y: 15.0, z: 0.0, rotY: 90 },
@@ -226,7 +243,6 @@
             spacing: 50
         };
 
-        // --- Car Variables ---
         const car = {
             position: new THREE.Vector3(0, 15 + 0.5, -60), 
             angle: Math.PI,        
@@ -234,8 +250,7 @@
             maxSpeed: 1.65,        
             accelerationRate: 0.0055, 
             brakingRate: 0.009,
-            friction: 0.004,       
-            steeringInput: 0       
+            friction: 0.004       
         };
         
         const keys = {};
@@ -249,7 +264,6 @@
         });
         window.addEventListener('keyup', e => keys[e.key] = false);
 
-        // Mouse look for flying debug camera
         let isMouseDown = false;
         window.addEventListener('mousedown', () => { if(debugMode) isMouseDown = true; });
         window.addEventListener('mouseup', () => { isMouseDown = false; });
@@ -261,98 +275,23 @@
             }
         });
 
-        // --- Gamepad Setup ---
-        let gamepadConnected = false;
-        window.addEventListener("gamepadconnected", (e) => {
-            gamepadConnected = true;
-            document.getElementById('controller-status').innerText = `Connected: ${e.gamepad.id}`;
-            document.getElementById('controller-status').style.color = '#55ff55';
-        });
-
-        // --- Load Road Texture & Setup Bridge ---
-        const textureLoader = new THREE.TextureLoader();
-        const roadTexture = textureLoader.load(
-            'https://cdn.cgbookcase.cloud/file/cgbookcase/textures/downloads/Three_lane_road_clean_01/Three_lane_road_clean_01_1K_Height.png',
-            (texture) => {
-                texture.wrapS = THREE.RepeatWrapping;
-                texture.wrapT = THREE.RepeatWrapping;
-                texture.repeat.set(40, 1); 
-                texture.center.set(0.5, 0.5);
-                texture.rotation = Math.PI / 2; 
-                texture.needsUpdate = true;
-            }
-        );
-
+        // --- Road & Bridge Setup ---
         const roadWidth = 15; 
         const roadLength = 2500;
         const bridgeHeight = 15; 
 
-        const roadMat = new THREE.MeshStandardMaterial({ map: roadTexture, roughness: 0.8 });
+        const roadMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
         const roadGeo = new THREE.PlaneGeometry(roadWidth, roadLength);
         const road = new THREE.Mesh(roadGeo, roadMat);
         road.rotation.x = -Math.PI / 2;
         road.position.set(0, bridgeHeight, 0);
         scene.add(road);
 
-        const fenceMat = new THREE.MeshStandardMaterial({ color: 0x666666 });
-        const fenceGeo = new THREE.BoxGeometry(0.5, 1.5, roadLength);
-        const leftFence = new THREE.Mesh(fenceGeo, fenceMat);
-        leftFence.position.set(-roadWidth / 2, bridgeHeight + 0.75, 0);
-        scene.add(leftFence);
-        const rightFence = new THREE.Mesh(fenceGeo, fenceMat);
-        rightFence.position.set(roadWidth / 2, bridgeHeight + 0.75, 0);
-        scene.add(rightFence);
-
-        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x4d4d4d });
-        const pillarGeo = new THREE.BoxGeometry(1.5, bridgeHeight, 1.5);
-        const pillars = [];
-        const pillarSpacing = 80;
-        const totalPillars = 40;
-
-        for (let i = 0; i < totalPillars; i++) {
-            [-roadWidth / 2 + 1, roadWidth / 2 - 1].forEach(xOffset => {
-                const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-                const zPos = (i * pillarSpacing) - (totalPillars * pillarSpacing / 2);
-                pillar.position.set(xOffset, bridgeHeight / 2, zPos);
-                scene.add(pillar);
-                pillars.push(pillar);
-            });
-        }
-
         const groundGeo = new THREE.PlaneGeometry(6000, 6000);
         const groundMat = new THREE.MeshStandardMaterial({ color: 0x111c16 });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
-
-        const laneCoordinates = [-4.5, 0.0, 4.5];
-
-        // --- Player Car Setup ---
-        const playerCar = new THREE.Group();
-        const bodyGeo = new THREE.BoxGeometry(1.8, 1, 3.8);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffcc00 }); 
-        const carBody = new THREE.Mesh(bodyGeo, bodyMat);
-        carBody.position.y = 0.5;
-        playerCar.add(carBody);
-        playerCar.position.copy(car.position);
-        scene.add(playerCar);
-
-        // --- AI Traffic Setup ---
-        const aiCars = [];
-        const aiCarGeo = new THREE.BoxGeometry(1.8, 1, 3.8);
-        const aiColors = [0xcc3333, 0x3366cc, 0x228833, 0xcc6600];
-
-        laneCoordinates.forEach((laneX, laneIndex) => {
-            let currentZ = -40;
-            for (let i = 0; i < 15; i++) {
-                const aiMat = new THREE.MeshStandardMaterial({ color: aiColors[Math.floor(Math.random() * aiColors.length)] });
-                const aiMesh = new THREE.Mesh(aiCarGeo, aiMat);
-                aiMesh.position.set(laneX, bridgeHeight + 0.5, currentZ);
-                scene.add(aiMesh);
-                aiCars.push({ mesh: aiMesh, laneIndex: laneIndex, currentLaneX: laneX, forwardSpeed: 1.2 });
-                currentZ -= 60;
-            }
-        });
 
         // --- Load Street Light .GLB Model ---
         const lightPoleGroup = [];
@@ -363,14 +302,12 @@
         gltfLoader.load('./street_light.glb', (gltf) => {
             document.getElementById('loader').style.opacity = '0';
             setTimeout(() => document.getElementById('loader').remove(), 500);
-
             baseStreetlightModel = gltf.scene;
             rebuildStreetlights();
         }, undefined, (error) => {
             console.warn('GLB load error. Fallback cubes activated.', error);
             document.getElementById('loader').innerText = 'Model failed to load. Check file name.';
             setTimeout(() => document.getElementById('loader').remove(), 2000);
-            
             baseStreetlightModel = new THREE.Mesh(
                 new THREE.BoxGeometry(0.5, 7, 0.5),
                 new THREE.MeshStandardMaterial({ color: 0x333333 })
@@ -381,19 +318,16 @@
         function rebuildStreetlights() {
             if (!baseStreetlightModel) return;
 
-            // Clear old instances
             lightPoleGroup.forEach(l => scene.remove(l.mesh));
             lightPoleGroup.length = 0;
 
             for (let i = 0; i < totalLightPoles; i++) {
                 const zPos = (i * config.spacing) - (totalLightPoles * config.spacing / 2);
 
-                // Left Instance
                 const leftInst = baseStreetlightModel.clone();
                 scene.add(leftInst);
                 lightPoleGroup.push({ mesh: leftInst, side: 'left', originalZ: zPos });
 
-                // Right Instance
                 const rightInst = baseStreetlightModel.clone();
                 scene.add(rightInst);
                 lightPoleGroup.push({ mesh: rightInst, side: 'right', originalZ: zPos });
@@ -406,47 +340,65 @@
                 const sideCfg = config[item.side];
                 item.mesh.scale.set(config.scale, config.scale, config.scale);
                 item.mesh.position.set(sideCfg.x, sideCfg.y, item.originalZ + sideCfg.z);
-                item.mesh.rotation.y = THREE.MathUtils.degToRad(sideCfg.rotY);
+                
+                // Wrap rotation cleanly within 0 to 360 degrees
+                let normalizedRot = sideCfg.rotY % 360;
+                if (normalizedRot < 0) normalizedRot += 360;
+                item.mesh.rotation.y = THREE.MathUtils.degToRad(normalizedRot);
             });
         }
 
-        // --- UI Event Listeners for Live Tweaking ---
-        function bindUiInput(id, configPath, valId, parseFn = parseFloat) {
-            const el = document.getElementById(id);
-            el.addEventListener('input', (e) => {
-                const val = parseFn(e.target.value);
-                document.getElementById(valId).innerText = val;
-                
-                if (configPath.includes('.')) {
-                    const parts = configPath.split('.');
-                    config[parts[0]][parts[1]] = val;
-                } else {
-                    config[configPath] = val;
+        // --- Bidirectional UI Binding (Range + Text Box) ---
+        function bindPair(rangeId, textId, configPath) {
+            const rangeEl = document.getElementById(rangeId);
+            const textEl = document.getElementById(textId);
+
+            function updateValue(val, updateRebuild = false) {
+                let parsed = parseFloat(val);
+                if (isNaN(parsed)) return;
+
+                // Handle rotation wrapping visually in input box if desired, or keep raw typed value
+                if (configPath.includes('rotY')) {
+                    parsed = ((parsed % 360) + 360) % 360;
                 }
 
-                if (configPath === 'spacing') {
+                rangeEl.value = parsed;
+                textEl.value = parsed;
+
+                // Update config
+                if (configPath.includes('.')) {
+                    const parts = configPath.split('.');
+                    config[parts[0]][parts[1]] = parsed;
+                } else {
+                    config[configPath] = parsed;
+                }
+
+                if (updateRebuild) {
                     rebuildStreetlights();
                 } else {
                     updateStreetlightTransforms();
                 }
-            });
+            }
+
+            rangeEl.addEventListener('input', (e) => updateValue(e.target.value, configPath === 'spacing'));
+            textEl.addEventListener('input', (e) => updateValue(e.target.value, configPath === 'spacing'));
         }
 
-        bindUiInput('input-scale', 'scale', 'val-scale');
-        bindUiInput('input-lx', 'left.x', 'val-lx');
-        bindUiInput('input-ly', 'left.y', 'val-ly');
-        bindUiInput('input-lz', 'left.z', 'val-lz');
-        bindUiInput('input-lrot', 'left.rotY', 'val-lrot');
-        bindUiInput('input-rx', 'right.x', 'val-rx');
-        bindUiInput('input-ry', 'right.y', 'val-ry');
-        bindUiInput('input-rz', 'right.z', 'val-rz');
-        bindUiInput('input-rrot', 'right.rotY', 'val-rrot');
-        bindUiInput('input-spacing', 'spacing', 'val-spacing', parseInt);
+        bindPair('range-scale', 'text-scale', 'scale');
+        bindPair('range-lx', 'text-lx', 'left.x');
+        bindPair('range-ly', 'text-ly', 'left.y');
+        bindPair('range-lz', 'text-lz', 'left.z');
+        bindPair('range-lrot', 'text-lrot', 'left.rotY');
+        bindPair('range-rx', 'text-rx', 'right.x');
+        bindPair('range-ry', 'text-ry', 'right.y');
+        bindPair('range-rz', 'text-rz', 'right.z');
+        bindPair('range-rrot', 'text-rrot', 'right.rotY');
+        bindPair('range-spacing', 'text-spacing', 'spacing');
 
         document.getElementById('export-btn').addEventListener('click', () => {
             const jsonStr = JSON.stringify(config, null, 2);
             navigator.clipboard.writeText(jsonStr);
-            alert('Settings copied to clipboard! Paste them in your next message.');
+            alert('Settings copied to clipboard!');
         });
 
         // --- Game Loop ---
@@ -454,7 +406,6 @@
             requestAnimationFrame(animate);
 
             if (debugMode) {
-                // Flying Debug Camera Controls
                 let moveSpeed = 0.8;
                 if (keys['Shift']) moveSpeed = 2.5;
 
@@ -473,20 +424,14 @@
                 camera.rotation.set(0, 0, 0);
                 camera.rotation.y = flyCam.rotationY;
                 camera.rotation.x = flyCam.rotationX;
-
             } else {
-                // Standard Car Driving Mechanics (~5 sec acceleration)
                 let accelerating = keys['ArrowUp'] || keys['w'] || keys['W'];
                 let reversing = keys['ArrowDown'] || keys['s'] || keys['S'];
 
                 if (accelerating) {
-                    let currentMag = Math.abs(car.speed);
-                    let dynamicAccel = car.accelerationRate * (1.0 - (currentMag / car.maxSpeed) * 0.7);
-                    car.speed -= dynamicAccel;
-                    car.speed = Math.max(car.speed, -car.maxSpeed);
+                    car.speed = Math.max(car.speed - car.accelerationRate, -car.maxSpeed);
                 } else if (reversing) {
-                    car.speed += car.brakingRate;
-                    car.speed = Math.min(car.speed, car.maxSpeed * 0.5);
+                    car.speed = Math.min(car.speed + car.brakingRate, car.maxSpeed * 0.5);
                 } else {
                     if (car.speed > 0) car.speed = Math.max(0, car.speed - car.friction);
                     if (car.speed < 0) car.speed = Math.min(0, car.speed + car.friction);
@@ -497,17 +442,13 @@
 
                 car.position.x -= Math.sin(car.angle) * car.speed;
                 car.position.z -= Math.cos(car.angle) * car.speed;
-                playerCar.position.copy(car.position);
-                playerCar.rotation.y = car.angle;
 
-                // Chase Camera
                 camera.position.x = car.position.x - Math.sin(car.angle) * 12;
                 camera.position.y = bridgeHeight + 4;
                 camera.position.z = car.position.z - Math.cos(car.angle) * 12;
                 camera.lookAt(car.position.x + Math.sin(car.angle) * 10, bridgeHeight + 0.8, car.position.z + Math.cos(car.angle) * 10);
             }
 
-            // Infinite Looping for Streetlights & Scenery
             const referenceZ = debugMode ? camera.position.z : car.position.z;
 
             lightPoleGroup.forEach(l => {
