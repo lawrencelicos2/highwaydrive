@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Elevated Highway Car Sim - Free Decimal Text Input</title>
+    <title>3D Elevated Highway Car Sim - Full Traffic & Road</title>
     <style>
         body {
             margin: 0;
@@ -46,164 +46,13 @@
             pointer-events: none;
             transition: opacity 0.5s ease;
         }
-        /* --- Debug Control Panel --- */
-        #debug-panel {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.9);
-            border: 1px solid #444;
-            padding: 15px;
-            border-radius: 8px;
-            color: #fff;
-            width: 320px;
-            max-height: 90vh;
-            overflow-y: auto;
-            font-size: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            z-index: 1000;
-        }
-        #debug-panel h3 {
-            margin-top: 0;
-            margin-bottom: 10px;
-            font-size: 14px;
-            color: #ffcc00;
-            border-bottom: 1px solid #555;
-            padding-bottom: 5px;
-        }
-        .control-group {
-            margin-bottom: 10px;
-        }
-        .control-group label {
-            display: block;
-            margin-bottom: 3px;
-            color: #ccc;
-        }
-        .input-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .control-group input[type="range"] {
-            flex: 1;
-        }
-        .control-group input[type="text"] {
-            width: 75px;
-            background: #222;
-            border: 1px solid #555;
-            color: #ffcc00;
-            padding: 4px;
-            text-align: right;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        #export-btn {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 8px;
-            width: 100%;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        #export-btn:hover {
-            background: #218838;
-        }
     </style>
 </head>
 <body>
 
     <div id="loader">Loading street_light.glb Model...</div>
-    <div id="hud">Mode: <span id="mode-status" style="color: #ffcc00;">DEBUG FLYING CAM</span> | Press <strong>F</strong> to toggle Drive/Fly</div>
-    <div id="instructions">Use <strong>W/A/S/D + Space/Shift</strong> to Fly in Debug Mode. You can now type decimals like "2." or ".0" freely.</div>
-
-    <!-- Debug Panel -->
-    <div id="debug-panel">
-        <h3>🔧 Unrestricted Inspector</h3>
-        
-        <div class="control-group">
-            <label>Global Scale</label>
-            <div class="input-row">
-                <input type="range" id="range-scale" min="0.01" max="10" step="0.01" value="1.0">
-                <input type="text" id="text-scale" value="1.0">
-            </div>
-        </div>
-
-        <hr style="border-color: #444; margin: 10px 0;">
-        <h4 style="margin:5px 0; color:#aaa;">Left Side Controls</h4>
-        <div class="control-group">
-            <label>Offset X</label>
-            <div class="input-row">
-                <input type="range" id="range-lx" min="-50" max="50" step="0.1" value="-8.5">
-                <input type="text" id="text-lx" value="-8.5">
-            </div>
-        </div>
-        <div class="control-group">
-            <label>Offset Y (Height)</label>
-            <div class="input-row">
-                <input type="range" id="range-ly" min="-50" max="100" step="0.1" value="15.0">
-                <input type="text" id="text-ly" value="15.0">
-            </div>
-        </div>
-        <div class="control-group">
-            <label>Offset Z</label>
-            <div class="input-row">
-                <input type="range" id="range-lz" min="-50" max="50" step="0.1" value="0.0">
-                <input type="text" id="text-lz" value="0.0">
-            </div>
-        </div>
-        <div class="control-group">
-            <label>Rotation Y (0 - 360°)</label>
-            <div class="input-row">
-                <input type="range" id="range-lrot" min="0" max="360" step="1" value="90">
-                <input type="text" id="text-lrot" value="90">
-            </div>
-        </div>
-
-        <hr style="border-color: #444; margin: 10px 0;">
-        <h4 style="margin:5px 0; color:#aaa;">Right Side Controls</h4>
-        <div class="control-group">
-            <label>Offset X</label>
-            <div class="input-row">
-                <input type="range" id="range-rx" min="-50" max="50" step="0.1" value="8.5">
-                <input type="text" id="text-rx" value="8.5">
-            </div>
-        </div>
-        <div class="control-group">
-            <label>Offset Y (Height)</label>
-            <div class="input-row">
-                <input type="range" id="range-ry" min="-50" max="100" step="0.1" value="15.0">
-                <input type="text" id="text-ry" value="15.0">
-            </div>
-        </div>
-        <div class="control-group">
-            <label>Offset Z</label>
-            <div class="input-row">
-                <input type="range" id="range-rz" min="-50" max="50" step="0.1" value="0.0">
-                <input type="text" id="text-rz" value="0.0">
-            </div>
-        </div>
-        <div class="control-group">
-            <label>Rotation Y (0 - 360°)</label>
-            <div class="input-row">
-                <input type="range" id="range-rrot" min="0" max="360" step="1" value="270">
-                <input type="text" id="text-rrot" value="270">
-            </div>
-        </div>
-
-        <hr style="border-color: #444; margin: 10px 0;">
-        <div class="control-group">
-            <label>Loop / Spacing Distance</label>
-            <div class="input-row">
-                <input type="range" id="range-spacing" min="5" max="500" step="1" value="50">
-                <input type="text" id="text-spacing" value="50">
-            </div>
-        </div>
-
-        <button id="export-btn">📋 Copy Settings to Clipboard</button>
-    </div>
+    <div id="hud">Speed: <span id="speed-display" style="color: #ffcc00;">0</span> MPH</div>
+    <div id="instructions">Use <strong>W/A/S/D</strong> or <strong>Arrow Keys</strong> to Drive.</div>
 
     <!-- Load Three.js, GLTFLoader, and DRACOLoader via CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -211,6 +60,24 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
 
     <script>
+        // --- Applied Configuration ---
+        const config = {
+            "scale": 0.02,
+            "left": {
+                "x": -10.5,
+                "y": 15,
+                "z": 0,
+                "rotY": 0
+            },
+            "right": {
+                "x": 10.5,
+                "y": 15,
+                "z": 0,
+                "rotY": 180
+            },
+            "spacing": 122.5
+        };
+
         // --- Scene Setup ---
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xd97757); 
@@ -227,22 +94,7 @@
         directionalLight.position.set(100, 30, 50);
         scene.add(directionalLight);
 
-        // --- Debug Mode State & Flying Camera ---
-        let debugMode = true;
-        const flyCam = {
-            position: new THREE.Vector3(0, 25, -40),
-            rotationX: 0,
-            rotationY: 0
-        };
-
-        // --- Live Configuration State ---
-        const config = {
-            scale: 1.0,
-            left: { x: -8.5, y: 15.0, z: 0.0, rotY: 90 },
-            right: { x: 8.5, y: 15.0, z: 0.0, rotY: 270 },
-            spacing: 50
-        };
-
+        // --- Player Car State ---
         const car = {
             position: new THREE.Vector3(0, 15 + 0.5, -60), 
             angle: Math.PI,        
@@ -254,37 +106,15 @@
         };
         
         const keys = {};
-        window.addEventListener('keydown', e => {
-            if (document.activeElement.tagName === 'INPUT') return;
+        window.addEventListener('keydown', e => { keys[e.key] = true; });
+        window.addEventListener('keyup', e => { keys[e.key] = false; });
 
-            keys[e.key] = true;
-            if (e.key.toLowerCase() === 'f') {
-                debugMode = !debugMode;
-                document.getElementById('mode-status').innerText = debugMode ? "DEBUG FLYING CAM" : "DRIVING CAR MODE";
-                document.getElementById('mode-status').style.color = debugMode ? "#ffcc00" : "#55ff55";
-            }
-        });
-        window.addEventListener('keyup', e => {
-            if (document.activeElement.tagName === 'INPUT') return;
-            keys[e.key] = false;
-        });
-
-        let isMouseDown = false;
-        window.addEventListener('mousedown', () => { if(debugMode && document.activeElement.tagName !== 'INPUT') isMouseDown = true; });
-        window.addEventListener('mouseup', () => { isMouseDown = false; });
-        window.addEventListener('mousemove', (e) => {
-            if (debugMode && isMouseDown) {
-                flyCam.rotationY -= e.movementX * 0.003;
-                flyCam.rotationX -= e.movementY * 0.003;
-                flyCam.rotationX = Math.max(-Math.PI/2, Math.min(Math.PI/2, flyCam.rotationX));
-            }
-        });
-
-        // --- Road & Bridge Setup ---
-        const roadWidth = 15; 
+        // --- Road & Environment Setup ---
+        const roadWidth = 26; 
         const roadLength = 2500;
         const bridgeHeight = 15; 
 
+        // Main Elevated Highway Deck
         const roadMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 });
         const roadGeo = new THREE.PlaneGeometry(roadWidth, roadLength);
         const road = new THREE.Mesh(roadGeo, roadMat);
@@ -292,21 +122,82 @@
         road.position.set(0, bridgeHeight, 0);
         scene.add(road);
 
+        // Center dividers / lanes visual detail
+        const lineMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const lineGeo = new THREE.PlaneGeometry(0.4, roadLength);
+        const centerLine = new THREE.Mesh(lineGeo, lineMat);
+        centerLine.rotation.x = -Math.PI / 2;
+        centerLine.position.set(0, bridgeHeight + 0.02, 0);
+        scene.add(centerLine);
+
+        // Ground Below
         const groundGeo = new THREE.PlaneGeometry(6000, 6000);
         const groundMat = new THREE.MeshStandardMaterial({ color: 0x111c16 });
         const ground = new THREE.Mesh(groundGeo, groundMat);
         ground.rotation.x = -Math.PI / 2;
         scene.add(ground);
 
-        // --- Player Car Setup ---
+        // Highway Support Pillars
+        const pillarGeo = new THREE.BoxGeometry(2, bridgeHeight, 2);
+        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x555555 });
+        for (let z = -1200; z <= 1200; z += 100) {
+            const pillarL = new THREE.Mesh(pillarGeo, pillarMat);
+            pillarL.position.set(-8, bridgeHeight / 2, z);
+            scene.add(pillarL);
+
+            const pillarR = new THREE.Mesh(pillarGeo, pillarMat);
+            pillarR.position.set(8, bridgeHeight / 2, z);
+            scene.add(pillarR);
+        }
+
+        // --- Player Car Model ---
         const playerCar = new THREE.Group();
         const bodyGeo = new THREE.BoxGeometry(1.8, 1, 3.8);
         const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffcc00 }); 
         const carBody = new THREE.Mesh(bodyGeo, bodyMat);
         carBody.position.y = 0.5;
         playerCar.add(carBody);
+        
+        // Wheels
+        const wheelGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.4, 16);
+        wheelGeo.rotateZ(Math.PI / 2);
+        const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+        [-0.95, 0.95].forEach(x => {
+            [-1.2, 1.2].forEach(z => {
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.position.set(x, 0.4, z);
+                playerCar.add(wheel);
+            });
+        });
+
         playerCar.position.copy(car.position);
         scene.add(playerCar);
+
+        // --- Traffic Cars Setup ---
+        const trafficCars = [];
+        const trafficColors = [0xcc2222, 0x2222cc, 0x22cc22, 0xcccccc, 0x111111, 0xff8800];
+        const trafficGeo = new THREE.BoxGeometry(1.8, 1, 3.8);
+
+        for (let i = 0; i < 25; i++) {
+            const isLaneLeft = Math.random() > 0.5;
+            const tMat = new THREE.MeshStandardMaterial({ color: trafficColors[Math.floor(Math.random() * trafficColors.length)] });
+            const tMesh = new THREE.Mesh(trafficGeo, tMat);
+            
+            const tCar = {
+                mesh: tMesh,
+                position: new THREE.Vector3(
+                    isLaneLeft ? -5 : 5,
+                    bridgeHeight + 0.5,
+                    (Math.random() - 0.5) * 2000
+                ),
+                speed: 0.4 + Math.random() * 0.6,
+                direction: isLaneLeft ? -1 : 1 // Traffic flowing in respective lanes
+            };
+            
+            tMesh.position.copy(tCar.position);
+            scene.add(tMesh);
+            trafficCars.push(tCar);
+        }
 
         // --- Load Street Light .GLB Model ---
         const lightPoleGroup = [];
@@ -354,7 +245,7 @@
             lightPoleGroup.forEach(item => {
                 const sideCfg = config[item.side];
                 item.mesh.scale.set(config.scale, config.scale, config.scale);
-                item.mesh.position.set(sideCfg.x, sideCfg.y, item.originalZ + sideCfg.z);
+                item.mesh.position.set(sideCfg.x, sideCfg.y + bridgeHeight - 15, item.originalZ + sideCfg.z);
                 
                 let normalizedRot = sideCfg.rotY % 360;
                 if (normalizedRot < 0) normalizedRot += 360;
@@ -362,122 +253,59 @@
             });
         }
 
-        // --- Bidirectional UI Binding with Pure String Buffering ---
-        function bindPairCorrected(rangeId, textId, configPath, isRotation = false) {
-            const rangeEl = document.getElementById(rangeId);
-            const textEl = document.getElementById(textId);
-
-            function setNestedConfig(path, val) {
-                if (isRotation) {
-                    val = ((val % 360) + 360) % 360;
-                }
-                if (path.includes('.')) {
-                    const parts = path.split('.');
-                    config[parts[0]][parts[1]] = val;
-                } else {
-                    config[path] = val;
-                }
-            }
-
-            // Slider changes update both text and 3D scene immediately
-            rangeEl.addEventListener('input', (e) => {
-                const val = parseFloat(e.target.value);
-                if (isNaN(val)) return;
-                textEl.value = e.target.value;
-                setNestedConfig(configPath, val);
-                if (configPath === 'spacing') rebuildStreetlights();
-                else updateStreetlightTransforms();
-            });
-
-            // Text input allows raw typing without stripping dots or zero decimals
-            textEl.addEventListener('input', (e) => {
-                const raw = e.target.value;
-
-                // If it parses to a valid number (e.g. "2.", ".0", "-5."), apply it immediately!
-                const val = parseFloat(raw);
-                if (!isNaN(val)) {
-                    rangeEl.value = val;
-                    setNestedConfig(configPath, val);
-                    if (configPath === 'spacing') rebuildStreetlights();
-                    else updateStreetlightTransforms();
-                }
-            });
-        }
-
-        bindPairCorrected('range-scale', 'text-scale', 'scale');
-        bindPairCorrected('range-lx', 'text-lx', 'left.x');
-        bindPairCorrected('range-ly', 'text-ly', 'left.y');
-        bindPairCorrected('range-lz', 'text-lz', 'left.z');
-        bindPairCorrected('range-lrot', 'text-lrot', 'left.rotY', true);
-        bindPairCorrected('range-rx', 'text-rx', 'right.x');
-        bindPairCorrected('range-ry', 'text-ry', 'right.y');
-        bindPairCorrected('range-rz', 'text-rz', 'right.z');
-        bindPairCorrected('range-rrot', 'text-rrot', 'right.rotY', true);
-        bindPairCorrected('range-spacing', 'text-spacing', 'spacing');
-
-        document.getElementById('export-btn').addEventListener('click', () => {
-            const jsonStr = JSON.stringify(config, null, 2);
-            navigator.clipboard.writeText(jsonStr);
-            alert('Settings copied to clipboard!');
-        });
-
         // --- Game Loop ---
         function animate() {
             requestAnimationFrame(animate);
 
-            if (debugMode) {
-                let moveSpeed = 0.8;
-                if (keys['Shift']) moveSpeed = 2.5;
+            // Driving Controls & Physics
+            let accelerating = keys['ArrowUp'] || keys['w'] || keys['W'];
+            let reversing = keys['ArrowDown'] || keys['s'] || keys['S'];
 
-                const dir = new THREE.Vector3();
-                if (keys['w'] || keys['W']) dir.z -= 1;
-                if (keys['s'] || keys['S']) dir.z += 1;
-                if (keys['a'] || keys['A']) dir.x -= 1;
-                if (keys['d'] || keys['D']) dir.x += 1;
-                if (keys[' ']) flyCam.position.y += moveSpeed;
-                if (keys['Control']) flyCam.position.y -= moveSpeed;
-
-                dir.applyAxisAngle(new THREE.Vector3(0, 1, 0), flyCam.rotationY);
-                flyCam.position.addScaledVector(dir, moveSpeed);
-
-                camera.position.copy(flyCam.position);
-                camera.rotation.set(0, 0, 0);
-                camera.rotation.y = flyCam.rotationY;
-                camera.rotation.x = flyCam.rotationX;
+            if (accelerating) {
+                car.speed = Math.max(car.speed - car.accelerationRate, -car.maxSpeed);
+            } else if (reversing) {
+                car.speed = Math.min(car.speed + car.brakingRate, car.maxSpeed * 0.5);
             } else {
-                let accelerating = keys['ArrowUp'] || keys['w'] || keys['W'];
-                let reversing = keys['ArrowDown'] || keys['s'] || keys['S'];
-
-                if (accelerating) {
-                    car.speed = Math.max(car.speed - car.accelerationRate, -car.maxSpeed);
-                } else if (reversing) {
-                    car.speed = Math.min(car.speed + car.brakingRate, car.maxSpeed * 0.5);
-                } else {
-                    if (car.speed > 0) car.speed = Math.max(0, car.speed - car.friction);
-                    if (car.speed < 0) car.speed = Math.min(0, car.speed + car.friction);
-                }
-
-                if (keys['ArrowLeft'] || keys['a']) car.angle += 0.025;
-                if (keys['ArrowRight'] || keys['d']) car.angle -= 0.025;
-
-                car.position.x -= Math.sin(car.angle) * car.speed;
-                car.position.z -= Math.cos(car.angle) * car.speed;
-                playerCar.position.copy(car.position);
-                playerCar.rotation.y = car.angle;
-
-                camera.position.x = car.position.x - Math.sin(car.angle) * 12;
-                camera.position.y = bridgeHeight + 4;
-                camera.position.z = car.position.z - Math.cos(car.angle) * 12;
-                camera.lookAt(car.position.x + Math.sin(car.angle) * 10, bridgeHeight + 0.8, car.position.z + Math.cos(car.angle) * 10);
+                if (car.speed > 0) car.speed = Math.max(0, car.speed - car.friction);
+                if (car.speed < 0) car.speed = Math.min(0, car.speed + car.friction);
             }
 
-            const referenceZ = debugMode ? camera.position.z : car.position.z;
+            if (keys['ArrowLeft'] || keys['a'] || keys['A']) car.angle += 0.025;
+            if (keys['ArrowRight'] || keys['d'] || keys['D']) car.angle -= 0.025;
 
+            car.position.x -= Math.sin(car.angle) * car.speed;
+            car.position.z -= Math.cos(car.angle) * car.speed;
+            
+            // Keep player bounded on bridge width
+            car.position.x = Math.max(-roadWidth / 2 + 2, Math.min(roadWidth / 2 - 2, car.position.x));
+
+            playerCar.position.copy(car.position);
+            playerCar.rotation.y = car.angle;
+
+            // Chase Camera
+            camera.position.x = car.position.x - Math.sin(car.angle) * 12;
+            camera.position.y = bridgeHeight + 4;
+            camera.position.z = car.position.z - Math.cos(car.angle) * 12;
+            camera.lookAt(car.position.x + Math.sin(car.angle) * 10, bridgeHeight + 0.8, car.position.z + Math.cos(car.angle) * 10);
+
+            // Update HUD Speedometer
+            document.getElementById('speed-display').innerText = Math.round(Math.abs(car.speed) * 65);
+
+            // Update Traffic Simulation
+            trafficCars.forEach(t => {
+                t.position.z += t.speed * t.direction;
+                if (t.position.z > car.position.z + 1200) t.position.z -= 2400;
+                if (t.position.z < car.position.z - 1200) t.position.z += 2400;
+                t.mesh.position.copy(t.position);
+                t.mesh.rotation.y = t.direction > 0 ? 0 : Math.PI;
+            });
+
+            // Infinite Street Light Looping relative to Player
             lightPoleGroup.forEach(l => {
                 const totalSpan = totalLightPoles * config.spacing;
-                if (l.mesh.position.z > referenceZ + 150) {
+                if (l.mesh.position.z > car.position.z + 150) {
                     l.originalZ -= totalSpan;
-                } else if (l.mesh.position.z < referenceZ - totalSpan + 150) {
+                } else if (l.mesh.position.z < car.position.z - totalSpan + 150) {
                     l.originalZ += totalSpan;
                 }
                 const sideCfg = config[l.side];
