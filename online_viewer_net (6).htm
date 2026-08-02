@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Elevated Highway Car Sim - Unrestricted Debug Mode with Car Reference</title>
+    <title>3D Elevated Highway Car Sim - Free Decimal Text Input</title>
     <style>
         body {
             margin: 0;
@@ -117,7 +117,7 @@
 
     <div id="loader">Loading street_light.glb Model...</div>
     <div id="hud">Mode: <span id="mode-status" style="color: #ffcc00;">DEBUG FLYING CAM</span> | Press <strong>F</strong> to toggle Drive/Fly</div>
-    <div id="instructions">Use <strong>W/A/S/D + Space/Shift</strong> to Fly in Debug Mode. Edit any input box freely with exact numbers.</div>
+    <div id="instructions">Use <strong>W/A/S/D + Space/Shift</strong> to Fly in Debug Mode. You can now type decimals like "2." or ".0" freely.</div>
 
     <!-- Debug Panel -->
     <div id="debug-panel">
@@ -255,6 +255,8 @@
         
         const keys = {};
         window.addEventListener('keydown', e => {
+            if (document.activeElement.tagName === 'INPUT') return;
+
             keys[e.key] = true;
             if (e.key.toLowerCase() === 'f') {
                 debugMode = !debugMode;
@@ -262,10 +264,13 @@
                 document.getElementById('mode-status').style.color = debugMode ? "#ffcc00" : "#55ff55";
             }
         });
-        window.addEventListener('keyup', e => keys[e.key] = false);
+        window.addEventListener('keyup', e => {
+            if (document.activeElement.tagName === 'INPUT') return;
+            keys[e.key] = false;
+        });
 
         let isMouseDown = false;
-        window.addEventListener('mousedown', () => { if(debugMode) isMouseDown = true; });
+        window.addEventListener('mousedown', () => { if(debugMode && document.activeElement.tagName !== 'INPUT') isMouseDown = true; });
         window.addEventListener('mouseup', () => { isMouseDown = false; });
         window.addEventListener('mousemove', (e) => {
             if (debugMode && isMouseDown) {
@@ -357,50 +362,58 @@
             });
         }
 
-        // --- Bidirectional UI Binding (Range + Text Box) ---
-        function bindPair(rangeId, textId, configPath) {
+        // --- Bidirectional UI Binding with Pure String Buffering ---
+        function bindPairCorrected(rangeId, textId, configPath, isRotation = false) {
             const rangeEl = document.getElementById(rangeId);
             const textEl = document.getElementById(textId);
 
-            function updateValue(val, updateRebuild = false) {
-                let parsed = parseFloat(val);
-                if (isNaN(parsed)) return;
-
-                if (configPath.includes('rotY')) {
-                    parsed = ((parsed % 360) + 360) % 360;
+            function setNestedConfig(path, val) {
+                if (isRotation) {
+                    val = ((val % 360) + 360) % 360;
                 }
-
-                rangeEl.value = parsed;
-                textEl.value = parsed;
-
-                if (configPath.includes('.')) {
-                    const parts = configPath.split('.');
-                    config[parts[0]][parts[1]] = parsed;
+                if (path.includes('.')) {
+                    const parts = path.split('.');
+                    config[parts[0]][parts[1]] = val;
                 } else {
-                    config[configPath] = parsed;
-                }
-
-                if (updateRebuild) {
-                    rebuildStreetlights();
-                } else {
-                    updateStreetlightTransforms();
+                    config[path] = val;
                 }
             }
 
-            rangeEl.addEventListener('input', (e) => updateValue(e.target.value, configPath === 'spacing'));
-            textEl.addEventListener('input', (e) => updateValue(e.target.value, configPath === 'spacing'));
+            // Slider changes update both text and 3D scene immediately
+            rangeEl.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                if (isNaN(val)) return;
+                textEl.value = e.target.value;
+                setNestedConfig(configPath, val);
+                if (configPath === 'spacing') rebuildStreetlights();
+                else updateStreetlightTransforms();
+            });
+
+            // Text input allows raw typing without stripping dots or zero decimals
+            textEl.addEventListener('input', (e) => {
+                const raw = e.target.value;
+
+                // If it parses to a valid number (e.g. "2.", ".0", "-5."), apply it immediately!
+                const val = parseFloat(raw);
+                if (!isNaN(val)) {
+                    rangeEl.value = val;
+                    setNestedConfig(configPath, val);
+                    if (configPath === 'spacing') rebuildStreetlights();
+                    else updateStreetlightTransforms();
+                }
+            });
         }
 
-        bindPair('range-scale', 'text-scale', 'scale');
-        bindPair('range-lx', 'text-lx', 'left.x');
-        bindPair('range-ly', 'text-ly', 'left.y');
-        bindPair('range-lz', 'text-lz', 'left.z');
-        bindPair('range-lrot', 'text-lrot', 'left.rotY');
-        bindPair('range-rx', 'text-rx', 'right.x');
-        bindPair('range-ry', 'text-ry', 'right.y');
-        bindPair('range-rz', 'text-rz', 'right.z');
-        bindPair('range-rrot', 'text-rrot', 'right.rotY');
-        bindPair('range-spacing', 'text-spacing', 'spacing');
+        bindPairCorrected('range-scale', 'text-scale', 'scale');
+        bindPairCorrected('range-lx', 'text-lx', 'left.x');
+        bindPairCorrected('range-ly', 'text-ly', 'left.y');
+        bindPairCorrected('range-lz', 'text-lz', 'left.z');
+        bindPairCorrected('range-lrot', 'text-lrot', 'left.rotY', true);
+        bindPairCorrected('range-rx', 'text-rx', 'right.x');
+        bindPairCorrected('range-ry', 'text-ry', 'right.y');
+        bindPairCorrected('range-rz', 'text-rz', 'right.z');
+        bindPairCorrected('range-rrot', 'text-rrot', 'right.rotY', true);
+        bindPairCorrected('range-spacing', 'text-spacing', 'spacing');
 
         document.getElementById('export-btn').addEventListener('click', () => {
             const jsonStr = JSON.stringify(config, null, 2);
