@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Dual-Carriageway Highway Sim</title>
+    <title>3D Dual-Carriageway Highway Sim - Advanced Model Debugger</title>
     <style>
         body {
             margin: 0;
@@ -27,12 +27,61 @@
             top: 20px;
             left: 20px;
             color: #fff;
-            font-size: 14px;
+            font-size: 13px;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
             pointer-events: none;
-            background: rgba(0,0,0,0.4);
-            padding: 10px 15px;
+            background: rgba(0,0,0,0.6);
+            padding: 12px 18px;
             border-radius: 8px;
+            line-height: 1.5;
+            z-index: 10;
+        }
+        #debug-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 320px;
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            z-index: 100;
+            font-size: 12px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        #debug-panel h3 {
+            margin-top: 0;
+            font-size: 14px;
+            color: #00ffcc;
+            border-bottom: 1px solid #444;
+            padding-bottom: 5px;
+        }
+        .control-group {
+            margin-bottom: 10px;
+        }
+        .control-group label {
+            display: block;
+            margin-bottom: 3px;
+            color: #ccc;
+        }
+        .control-row {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+        }
+        .control-row input[type="range"] {
+            flex: 1;
+        }
+        .control-row input[type="number"] {
+            width: 85px;
+            background: #222;
+            border: 1px solid #555;
+            color: #fff;
+            padding: 3px 5px;
+            border-radius: 3px;
+            font-family: monospace;
         }
         #loader {
             position: absolute;
@@ -45,26 +94,116 @@
             text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
             pointer-events: none;
             transition: opacity 0.5s ease;
+            z-index: 1000;
         }
     </style>
 </head>
 <body>
 
-    <div id="loader">Loading Assets...</div>
-    <div id="hud">Controller/Wheel: <span id="controller-status" style="color: #ff5555;">Not Detected (Press any button/wheel pedal)</span></div>
-    <div id="instructions">Use <strong>W/S</strong> or Pedals to accelerate/brake. Use <strong>A/D</strong> or Wheel to steer. Center median double-stone-davit streetlights, AMC Matador Sedan traffic models, continuous opposite AI traffic.</div>
+    <div id="loader">Loading Assets & Advanced Model Inspector...</div>
+    
+    <div id="hud">
+        Controller/Wheel: <span id="controller-status" style="color: #ff5555;">Not Detected</span><br>
+        <strong>[ADVANCED DEBUGGER ACTIVE]</strong><br>
+        Vertices: <span id="stat-verts">0</span> | Faces: <span id="stat-faces">0</span><br>
+        Materials: <span id="stat-mats">0</span> | Meshes: <span id="stat-meshes">0</span>
+    </div>
+
+    <!-- Unlimited Precision Debug Control Panel -->
+    <div id="debug-panel">
+        <h3>AMC Matador Model Inspector</h3>
+        <div style="margin-bottom: 10px; font-size: 11px; color: #aaa;">
+            Inputs accept unlimited values (e.g., 0.0001 or 5000). Press <strong>F1</strong> to toggle Drive/Orbit mode.
+        </div>
+        
+        <hr style="border: 0; border-top: 1px solid #444; margin: 10px 0;">
+
+        <!-- Scale Controls -->
+        <div class="control-group">
+            <label>Scale (XYZ Uniform)</label>
+            <div class="control-row">
+                <input type="range" id="scale-range" min="0.0001" max="5.0" step="0.0001" value="1.2">
+                <input type="number" id="scale-number" step="any" value="1.2">
+            </div>
+        </div>
+
+        <!-- Position / Offset Controls -->
+        <h4 style="margin: 10px 0 5px 0; color: #ffcc00; font-size: 12px;">Position Offset</h4>
+        <div class="control-group">
+            <label>Offset X</label>
+            <div class="control-row">
+                <input type="range" id="posx-range" min="-10" max="10" step="0.0001" value="0">
+                <input type="number" id="posx-number" step="any" value="0">
+            </div>
+        </div>
+        <div class="control-group">
+            <label>Offset Y (Height)</label>
+            <div class="control-row">
+                <input type="range" id="posy-range" min="-10" max="10" step="0.0001" value="0">
+                <input type="number" id="posy-number" step="any" value="0">
+            </div>
+        </div>
+        <div class="control-group">
+            <label>Offset Z</label>
+            <div class="control-row">
+                <input type="range" id="posz-range" min="-10" max="10" step="0.0001" value="0">
+                <input type="number" id="posz-number" step="any" value="0">
+            </div>
+        </div>
+
+        <!-- Rotation Controls -->
+        <h4 style="margin: 10px 0 5px 0; color: #ffcc00; font-size: 12px;">Rotation (Degrees)</h4>
+        <div class="control-group">
+            <label>Rotation X</label>
+            <div class="control-row">
+                <input type="range" id="rotx-range" min="-180" max="180" step="0.0001" value="0">
+                <input type="number" id="rotx-number" step="any" value="0">
+            </div>
+        </div>
+        <div class="control-group">
+            <label>Rotation Y</label>
+            <div class="control-row">
+                <input type="range" id="roty-range" min="-180" max="180" step="0.0001" value="0">
+                <input type="number" id="roty-number" step="any" value="0">
+            </div>
+        </div>
+        <div class="control-group">
+            <label>Rotation Z</label>
+            <div class="control-row">
+                <input type="range" id="rotz-range" min="-180" max="180" step="0.0001" value="0">
+                <input type="number" id="rotz-number" step="any" value="0">
+            </div>
+        </div>
+    </div>
+
+    <div id="instructions">Use <strong>W/S</strong> or Pedals to accelerate/brake. Use <strong>A/D</strong> or Wheel to steer. Press <strong>F1</strong> to toggle Orbit Inspector.</div>
 
     <!-- Load Three.js, GLTFLoader, DRACOLoader, and JSZip via CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/JSZip.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 
     <script>
-        // --- Streetlight Config (Center Median Double-Sided) ---
+        // --- Debug Mode Configuration ---
+        let debugMode = true;
+
+        // --- Model Transformation State ---
+        const modelTransform = {
+            scale: 1.2,
+            posX: 0,
+            posY: 0,
+            posZ: 0,
+            rotX: 0,
+            rotY: 0,
+            rotZ: 0
+        };
+
+        // --- Streetlight Config ---
         const streetlightConfig = {
             "scale": 0.02,
-            "center": { "x": 0, "y": 15 - 15, "z": 0, "rotY": 0 },
+            "center": { "x": 0, "y": 0, "z": 0, "rotY": 0 },
             "spacing": 122.5
         };
 
@@ -117,6 +256,12 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.body.appendChild(renderer.domElement);
 
+        const orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
+        orbitControls.enabled = true; // Starts enabled for inspection
+        camera.position.set(0, 18, 15);
+        orbitControls.target.set(0, 15.5, -60);
+        orbitControls.update();
+
         // Warm Sunset Lighting
         const ambientLight = new THREE.AmbientLight(0xffb74d, 0.7);
         scene.add(ambientLight);
@@ -138,128 +283,60 @@
         };
         
         const keys = {};
-        window.addEventListener('keydown', e => keys[e.key] = true);
+        window.addEventListener('keydown', e => {
+            keys[e.key] = true;
+            if (e.key === 'F1') {
+                debugMode = !debugMode;
+                orbitControls.enabled = debugMode;
+                if (!debugMode) {
+                    orbitControls.target.copy(car.position);
+                }
+            }
+        });
         window.addEventListener('keyup', e => keys[e.key] = false);
 
-        // --- Gamepad / Steering Wheel Integration ---
+        // --- Gamepad Integration ---
         let gamepadConnected = false;
         window.addEventListener("gamepadconnected", (e) => {
             gamepadConnected = true;
             document.getElementById('controller-status').innerText = `Connected: ${e.gamepad.id}`;
             document.getElementById('controller-status').style.color = '#55ff55';
         });
-        window.addEventListener("gamepaddisconnected", (e) => {
+        window.addEventListener("gamepaddisconnected", () => {
             gamepadConnected = false;
             document.getElementById('controller-status').innerText = "Disconnected";
             document.getElementById('controller-status').style.color = '#ff5555';
         });
 
-        // --- Load Textures ---
+        // --- Load Textures & Layout Architecture ---
         const textureLoader = new THREE.TextureLoader();
-        
-        // Road Texture
-        const roadTexture = textureLoader.load(
-            'https://cdn.cgbookcase.cloud/file/cgbookcase/textures/downloads/Three_lane_road_clean_01/Three_lane_road_clean_01_1K_Height.png',
-            (texture) => {
-                texture.wrapS = THREE.RepeatWrapping;
-                texture.wrapT = THREE.RepeatWrapping;
-                texture.repeat.set(40, 1); 
-                texture.center.set(0.5, 0.5);
-                texture.rotation = Math.PI / 2; 
-                texture.generateMipmaps = true;
-                texture.minFilter = THREE.LinearMipmapLinearFilter;
-                texture.magFilter = THREE.LinearFilter;
-                texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                texture.needsUpdate = true;
-            }
-        );
+        const roadTexture = textureLoader.load('https://cdn.cgbookcase.cloud/file/cgbookcase/textures/downloads/Three_lane_road_clean_01/Three_lane_road_clean_01_1K_Height.png', (texture) => {
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.repeat.set(40, 1);
+            texture.rotation = Math.PI / 2;
+            texture.needsUpdate = true;
+        });
 
-        // --- Transparent PNG Barrier Textures ---
-        const barrierHeight = 3.0 * 0.5; 
+        const barrierHeight = 1.5;
         const roadLength = 3500;
+        const leftBarrierTexture = textureLoader.load('https://yt3.ggpht.com/P_LsazD7dQwNYDwJITca7yCz8er77QIzgIuMxy4fAmFTaQQvMKtYA-ab-5Ya0-AHmFQf6ixSqJPllA=s612-rw-nd-v1');
+        const rightBarrierTexture = textureLoader.load('https://yt3.ggpht.com/_3Clp_kHSSj41OKTv_CHRbSXXOtx5S1xQutOxXYYRJrO8RFbxqe_cQAUIOdXVBgFKHgZw3AY-wVWXg=s600-rw-nd-v1');
 
-        const leftBarrierTexture = textureLoader.load(
-            'https://yt3.ggpht.com/P_LsazD7dQwNYDwJITca7yCz8er77QIzgIuMxy4fAmFTaQQvMKtYA-ab-5Ya0-AHmFQf6ixSqJPllA=s612-rw-nd-v1',
-            (texture) => {
-                texture.wrapS = THREE.RepeatWrapping;
-                texture.wrapT = THREE.RepeatWrapping;
-                texture.repeat.set(120, 1); 
-                texture.colorSpace = THREE.SRGBColorSpace;
-                texture.generateMipmaps = true;
-                texture.minFilter = THREE.LinearMipmapLinearFilter;
-                texture.magFilter = THREE.LinearFilter;
-                texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                texture.needsUpdate = true;
-            }
-        );
-
-        const rightBarrierTexture = textureLoader.load(
-            'https://yt3.ggpht.com/_3Clp_kHSSj41OKTv_CHRbSXXOtx5S1xQutOxXYYRJrO8RFbxqe_cQAUIOdXVBgFKHgZw3AY-wVWXg=s600-rw-nd-v1',
-            (texture) => {
-                texture.wrapS = THREE.RepeatWrapping;
-                texture.wrapT = THREE.RepeatWrapping;
-                
-                texture.image = texture.image || {};
-                const updateRepeat = (img) => {
-                    const aspect = (img.naturalWidth && img.naturalHeight) ? (img.naturalWidth / img.naturalHeight) : 1.5;
-                    const tileWidthWorld = barrierHeight * aspect; 
-                    const repeats = (roadLength / tileWidthWorld) * 1.05;
-                    texture.repeat.set(repeats, 1.02);
-                    texture.offset.set(0, -0.01);
-                    texture.needsUpdate = true;
-                };
-                
-                if (texture.image.complete) {
-                    updateRepeat(texture.image);
-                } else {
-                    texture.image.onload = () => updateRepeat(texture.image);
-                }
-
-                texture.colorSpace = THREE.SRGBColorSpace;
-                texture.generateMipmaps = true;
-                texture.minFilter = THREE.LinearMipmapLinearFilter;
-                texture.magFilter = THREE.LinearFilter;
-                texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-                texture.needsUpdate = true;
-            }
-        );
-
-        // --- Grass Texture ---
         const grassImg = new Image();
         grassImg.crossOrigin = "anonymous";
         grassImg.src = "https://tse1.mm.bing.net/th/id/OIP.izPAaDMt80oHJfPYnQM9xQHaHa?r=0&rs=1&pid=ImgDetMain&o=7&rm=3";
-        
         const grassTexture = new THREE.CanvasTexture();
         grassImg.onload = () => {
             const canvas = document.createElement('canvas');
-            const subSize = 512;
-            canvas.width = subSize;
-            canvas.height = subSize;
+            canvas.width = canvas.height = 512;
             const ctx = canvas.getContext('2d');
-
-            ctx.drawImage(grassImg, 0, 0, subSize, subSize);
-
-            ctx.globalCompositeOperation = 'overlay';
-            const grad = ctx.createRadialGradient(subSize*0.3, subSize*0.7, 10, subSize*0.3, subSize*0.7, subSize*0.6);
-            grad.addColorStop(0, 'rgba(180, 140, 90, 0.45)'); 
-            grad.addColorStop(0.5, 'rgba(140, 105, 60, 0.25)'); 
-            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-            
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, subSize, subSize);
-
+            ctx.drawImage(grassImg, 0, 0, 512, 512);
             grassTexture.image = canvas;
-            grassTexture.wrapS = THREE.RepeatWrapping;
-            grassTexture.wrapT = THREE.RepeatWrapping;
-            grassTexture.colorSpace = THREE.SRGBColorSpace;
-            grassTexture.generateMipmaps = true;
-            grassTexture.minFilter = THREE.LinearMipmapLinearFilter;
-            grassTexture.magFilter = THREE.LinearFilter;
-            grassTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            grassTexture.wrapS = grassTexture.wrapT = THREE.RepeatWrapping;
             grassTexture.needsUpdate = true;
         };
 
-        // --- Layout Architecture ---
         const roadWidth = 21;
         const outerGrassWidth = 350; 
         const medianGrassWidth = 6.0;
@@ -275,741 +352,210 @@
         const leftOuterGrassX = forwardRoadX - (roadWidth / 2) - (outerGrassWidth / 2);
         const rightOuterGrassX = backwardRoadX + (roadWidth / 2) + (outerGrassWidth / 2);
 
-        const leftOuterBackgroundFenceX = leftOuterGrassX - (outerGrassWidth / 2);
-        const rightOuterBackgroundFenceX = rightOuterGrassX + (outerGrassWidth / 2);
-
-        const roadMat = new THREE.MeshStandardMaterial({ 
-            map: roadTexture,
-            roughness: 0.8,
-            polygonOffset: true,
-            polygonOffsetFactor: -4.0,
-            polygonOffsetUnits: -4.0
-        });
+        const roadMat = new THREE.MeshStandardMaterial({ map: roadTexture, roughness: 0.8 });
         const roadGeo = new THREE.PlaneGeometry(roadWidth, roadLength);
 
-        // 1. Forward Road
         const roadForward = new THREE.Mesh(roadGeo, roadMat);
         roadForward.rotation.x = -Math.PI / 2;
         roadForward.position.set(forwardRoadX, bridgeHeight + 0.01, 0);
         scene.add(roadForward);
 
-        // 2. Backward (Opposite) Road
         const roadBackward = new THREE.Mesh(roadGeo, roadMat);
         roadBackward.rotation.x = -Math.PI / 2;
         roadBackward.position.set(backwardRoadX, bridgeHeight + 0.01, 0);
         scene.add(roadBackward);
 
-        // --- Road Barrier Fences ---
-        const barrierLength = roadLength + 2.0; 
-        const barrierGeo = new THREE.PlaneGeometry(barrierLength, barrierHeight);
-        const barrierHeightOffset = -0.6 * 0.5;
-
-        const oldFenceMat = new THREE.MeshStandardMaterial({ 
-            map: leftBarrierTexture, 
-            transparent: true,
-            alphaTest: 0.05, 
-            roughness: 0.5,
-            side: THREE.DoubleSide 
-        });
-
-        const newFenceMat = new THREE.MeshStandardMaterial({ 
-            map: rightBarrierTexture, 
-            transparent: true,
-            alphaTest: 0.05, 
-            roughness: 0.5,
-            side: THREE.DoubleSide 
-        });
-
-        const leftOldFence = new THREE.Mesh(barrierGeo, oldFenceMat);
-        leftOldFence.position.set(leftOldFenceX, bridgeHeight + (barrierHeight / 2) + barrierHeightOffset, 0); 
-        leftOldFence.rotation.y = Math.PI / 2;
-        scene.add(leftOldFence);
-
-        const forwardRightNewFence = new THREE.Mesh(barrierGeo, newFenceMat);
-        forwardRightNewFence.position.set(forwardRightNewFenceX, bridgeHeight + (barrierHeight / 2) + barrierHeightOffset, 0); 
-        forwardRightNewFence.rotation.y = -Math.PI / 2;
-        scene.add(forwardRightNewFence);
-
-        const backwardLeftNewFence = new THREE.Mesh(barrierGeo, newFenceMat);
-        backwardLeftNewFence.position.set(backwardLeftNewFenceX, bridgeHeight + (barrierHeight / 2) + barrierHeightOffset, 0); 
-        backwardLeftNewFence.rotation.y = Math.PI / 2;
-        scene.add(backwardLeftNewFence);
-
-        const rightOldFence = new THREE.Mesh(barrierGeo, oldFenceMat);
-        rightOldFence.position.set(rightOldFenceX, bridgeHeight + (barrierHeight / 2) + barrierHeightOffset, 0); 
-        rightOldFence.rotation.y = Math.PI / 2;
-        scene.add(rightOldFence);
-
-        // --- Double-Size Outer Background Fences ---
-        const bgFenceHeight = barrierHeight * 2; 
-        const bgFenceGeo = new THREE.PlaneGeometry(barrierLength, bgFenceHeight);
-        const bgFenceHeightOffset = -1.2 * 0.5; 
-
-        const leftOuterBgFence = new THREE.Mesh(bgFenceGeo, newFenceMat);
-        leftOuterBgFence.position.set(leftOuterBackgroundFenceX, bridgeHeight + (bgFenceHeight / 2) + bgFenceHeightOffset, 0);
-        leftOuterBgFence.rotation.y = Math.PI / 2;
-        scene.add(leftOuterBgFence);
-
-        const rightOuterBgFence = new THREE.Mesh(bgFenceGeo, newFenceMat);
-        rightOuterBgFence.position.set(rightOuterBackgroundFenceX, bridgeHeight + (bgFenceHeight / 2) + bgFenceHeightOffset, 0);
-        rightOuterBgFence.rotation.y = Math.PI / 2;
-        scene.add(rightOuterBgFence);
-
-        // --- Sparse Roofless Warehouses and 1/30 Skyscraper Mega-Factories ---
-        const factoryX = (forwardRoadX - roadWidth / 2) - 45;
-        const factoryGroup = [];
-        const greyShades = [0x555555, 0x666666, 0x777777, 0x4a4a4a, 0x5e5e5e, 0x6c7a89];
-        
-        const factorySpacing = 160;
-        const totalFactories = 45;
-        const totalSpan = totalFactories * factorySpacing;
-
-        for (let i = 0; i < totalFactories; i++) {
-            const zPos = (i * factorySpacing) - (totalSpan / 2) + (Math.random() * 40 - 20);
-            
-            const roll = Math.random();
-            const isSkyscraperMega = (roll < 1/30); 
-            const isWarehouse = (!isSkyscraperMega && roll < (1/30 + 1/7)); 
-
-            if (!isSkyscraperMega && !isWarehouse) {
-                continue; 
-            }
-
-            const fWidth = isSkyscraperMega ? (90 + Math.random() * 40) : (35 + Math.random() * 30); 
-            const fHeight = isSkyscraperMega ? ((110 + Math.random() * 70) * (2/3) * (2/3)) : ((12 + Math.random() * 10) * (2/3)); 
-            const fLength = isSkyscraperMega ? (300 + Math.random() * 200) : (70 + Math.random() * 50); 
-
-            const wallColor = greyShades[Math.floor(Math.random() * greyShades.length)];
-            const wallMat = new THREE.MeshStandardMaterial({ 
-                color: wallColor,
-                roughness: 0.85,
-                side: THREE.DoubleSide 
-            });
-
-            const factoryGroupMesh = new THREE.Group();
-            const wallThickness = 1.2;
-
-            const frontWallGeo = new THREE.BoxGeometry(fWidth, fHeight, wallThickness);
-            const frontWall = new THREE.Mesh(frontWallGeo, wallMat);
-            frontWall.position.set(0, fHeight / 2, fLength / 2);
-            factoryGroupMesh.add(frontWall);
-
-            const backWall = new THREE.Mesh(frontWallGeo, wallMat);
-            backWall.position.set(0, fHeight / 2, -fLength / 2);
-            factoryGroupMesh.add(backWall);
-
-            const sideWallGeo = new THREE.BoxGeometry(wallThickness, fHeight, fLength - (wallThickness * 2));
-            const leftWall = new THREE.Mesh(sideWallGeo, wallMat);
-            leftWall.position.set(-fWidth / 2 + wallThickness / 2, fHeight / 2, 0);
-            factoryGroupMesh.add(leftWall);
-
-            const rightWall = new THREE.Mesh(sideWallGeo, wallMat);
-            rightWall.position.set(fWidth / 2 - wallThickness / 2, fHeight / 2, 0);
-            factoryGroupMesh.add(rightWall);
-
-            factoryGroupMesh.position.set(factoryX - (fWidth / 2), bridgeHeight, zPos);
-            scene.add(factoryGroupMesh);
-            factoryGroup.push({ mesh: factoryGroupMesh, baseZ: zPos, span: totalSpan });
-        }
-
-        // --- Grass Tiling via Segment Pools ---
+        // --- Grass Segments ---
         const grassSegmentLength = 200.0;
-        const grassOverlap = 0.5;
-        const actualGrassSegLen = grassSegmentLength + grassOverlap;
         const segmentsPerSide = Math.ceil(roadLength / grassSegmentLength) + 4;
-
-        const grassMatLeft = new THREE.MeshStandardMaterial({ 
-            map: grassTexture, color: 0x8D9E42, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: 4.0, polygonOffsetUnits: 4.0 
-        });
-        const grassMatMedian = new THREE.MeshStandardMaterial({ 
-            map: grassTexture, color: 0x8D9E42, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: 4.0, polygonOffsetUnits: 4.0 
-        });
-        const grassMatRight = new THREE.MeshStandardMaterial({ 
-            map: grassTexture, color: 0x8D9E42, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: 4.0, polygonOffsetUnits: 4.0 
-        });
-
-        const tileScale = 15.0;
-        const updateMatRepeats = (mat, w, l) => {
-            if (mat.map) {
-                mat.map.wrapS = THREE.RepeatWrapping;
-                mat.map.wrapT = THREE.RepeatWrapping;
-                mat.map.repeat.set(w / tileScale, l / tileScale);
-                mat.map.needsUpdate = true;
-            }
-        };
-
+        const grassMat = new THREE.MeshStandardMaterial({ map: grassTexture, color: 0x8D9E42, roughness: 0.9 });
+        
         const leftGrassSegments = [];
-        const medianGrassSegments = [];
         const rightGrassSegments = [];
-
-        const leftSegGeo = new THREE.PlaneGeometry(outerGrassWidth, actualGrassSegLen);
-        const medianSegGeo = new THREE.PlaneGeometry(medianGrassWidth, actualGrassSegLen);
-        const rightSegGeo = new THREE.PlaneGeometry(outerGrassWidth, actualGrassSegLen);
-
-        const startZOffset = -roadLength / 2 - 400;
-
         for (let i = 0; i < segmentsPerSide; i++) {
-            const zPos = startZOffset + (i * grassSegmentLength);
-
-            const lg = new THREE.Mesh(leftSegGeo, grassMatLeft);
+            const zPos = -roadLength / 2 - 400 + (i * grassSegmentLength);
+            const lg = new THREE.Mesh(new THREE.PlaneGeometry(outerGrassWidth, grassSegmentLength), grassMat);
             lg.rotation.x = -Math.PI / 2;
             lg.position.set(leftOuterGrassX, bridgeHeight - 0.02, zPos);
             scene.add(lg);
             leftGrassSegments.push(lg);
 
-            const mg = new THREE.Mesh(medianSegGeo, grassMatMedian);
-            mg.rotation.x = -Math.PI / 2;
-            mg.position.set(medianGrassX, bridgeHeight - 0.02, zPos);
-            scene.add(mg);
-            medianGrassSegments.push(mg);
-
-            const rg = new THREE.Mesh(rightSegGeo, grassMatRight);
+            const rg = new THREE.Mesh(new THREE.PlaneGeometry(outerGrassWidth, grassSegmentLength), grassMat);
             rg.rotation.x = -Math.PI / 2;
             rg.position.set(rightOuterGrassX, bridgeHeight - 0.02, zPos);
             scene.add(rg);
             rightGrassSegments.push(rg);
         }
 
-        setTimeout(() => {
-            updateMatRepeats(grassMatLeft, outerGrassWidth, actualGrassSegLen);
-            updateMatRepeats(grassMatMedian, medianGrassWidth, actualGrassSegLen);
-            updateMatRepeats(grassMatRight, outerGrassWidth, actualGrassSegLen);
-        }, 150);
-
-        // Bridge Support Pillars Pool
-        const pillarMat = new THREE.MeshStandardMaterial({ color: 0x4d4d4d });
-        const pillarGeo = new THREE.BoxGeometry(1.5, bridgeHeight, 1.5);
-        const pillars = [];
-        const pillarSpacing = 80;
-        const totalPillars = 40;
-
-        for (let i = 0; i < totalPillars; i++) {
-            [forwardRoadX - roadWidth/2 + 2, forwardRoadX + roadWidth/2 - 2, backwardRoadX - roadWidth/2 + 2, backwardRoadX + roadWidth/2 - 2].forEach(xOffset => {
-                const pillar = new THREE.Mesh(pillarGeo, pillarMat);
-                const zPos = (i * pillarSpacing) - (totalPillars * pillarSpacing / 2);
-                pillar.position.set(xOffset, bridgeHeight / 2, zPos);
-                scene.add(pillar);
-                pillars.push(pillar);
-            });
-        }
-
-        // --- Lanes Setup ---
+        // --- Lanes & Cars ---
         const playerLaneCoordinates = [forwardRoadX - 4.5, forwardRoadX, forwardRoadX + 4.5];
         const oncomingLaneCoordinates = [backwardRoadX - 4.5, backwardRoadX, backwardRoadX + 4.5];
 
-        // Fallback Player/AI Car Mesh Generator (used while GLB loads or if missing)
         function createFallbackCarMesh(colorHex = 0xffcc00) {
             const group = new THREE.Group();
-            const bodyGeo = new THREE.BoxGeometry(1.8, 1, 3.8);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex }); 
-            const carBody = new THREE.Mesh(bodyGeo, bodyMat);
-            carBody.position.y = 0.5;
-            group.add(carBody);
-
-            const frontGeo = new THREE.BoxGeometry(1.2, 0.3, 0.4);
-            const frontMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-            const carFront = new THREE.Mesh(frontGeo, frontMat);
-            carFront.position.set(0, 0.5, -1.8); 
-            group.add(carFront);
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1, 3.8), new THREE.MeshStandardMaterial({ color: colorHex }));
+            body.position.y = 0.5;
+            group.add(body);
             return group;
         }
 
-        // Initialize Player Car with Fallback first
         const playerCar = createFallbackCarMesh(0xffcc00);
         playerCar.position.copy(car.position);
         scene.add(playerCar);
 
-        // AI Traffic Containers
         const aiCars = [];
-        const aiColors = [0xcc3333, 0x3366cc, 0x228833, 0xcc6600, 0x9933cc, 0xe6e6e6];
-
-        // Populate placeholder AI meshes immediately so simulation runs instantly
         playerLaneCoordinates.forEach((laneX, laneIndex) => {
-            for (let i = 0; i < 20; i++) {
-                const aiMesh = createFallbackCarMesh(aiColors[Math.floor(Math.random() * aiColors.length)]);
-                const initialZ = (i * 60) - 400 + (Math.random() * 20);
-                aiMesh.position.set(laneX, bridgeHeight + 0.5, initialZ);
+            for (let i = 0; i < 15; i++) {
+                const aiMesh = createFallbackCarMesh(0xcc3333);
+                aiMesh.position.set(laneX, bridgeHeight + 0.5, (i * 60) - 400);
                 scene.add(aiMesh);
-                
-                aiCars.push({
-                    mesh: aiMesh,
-                    laneIndex: laneIndex,        
-                    currentLaneX: laneX,
-                    targetLaneIndex: laneIndex,
-                    targetLaneX: laneX,
-                    isChangingLane: false,
-                    laneChangeProgress: 0,
-                    forwardSpeed: (1.2 + Math.random() * 0.6) * 0.9,
-                    isOncoming: false
-                });
+                aiCars.push({ mesh: aiMesh, currentLaneX: laneX, forwardSpeed: 1.2, isOncoming: false });
             }
         });
 
-        oncomingLaneCoordinates.forEach((laneX, laneIndex) => {
-            for (let i = 0; i < 45; i++) {
-                const aiMesh = createFallbackCarMesh(aiColors[Math.floor(Math.random() * aiColors.length)]);
-                const initialZ = (i * 70) - 1500 + (Math.random() * 40);
-                aiMesh.position.set(laneX, bridgeHeight + 0.5, initialZ);
-                aiMesh.rotation.y = Math.PI; 
-                scene.add(aiMesh);
-                
-                aiCars.push({
-                    mesh: aiMesh,
-                    laneIndex: laneIndex,        
-                    currentLaneX: laneX,
-                    targetLaneIndex: laneIndex,
-                    targetLaneX: laneX,
-                    isChangingLane: false,
-                    laneChangeProgress: 0,
-                    forwardSpeed: (1.2 + Math.random() * 0.6) * 0.9,
-                    isOncoming: true
-                });
-            }
-        });
-
-        // --- Load Assets (Streetlights Zip & AMC Matador Sedan GLB) ---
-        const lightPoleGroup = [];
-        const totalLightPoles = 35;
-        const zipUrl = './double_stone_davit_streetlight.zip';
-        const carGlbUrl = './amc_matador_sedan.glb';
+        // --- Model Inspector & Analyzer ---
+        function analyzeModel(object3d) {
+            let verts = 0, faces = 0, meshes = 0;
+            let mats = new Set();
+            object3d.traverse((child) => {
+                if (child.isMesh) {
+                    meshes++;
+                    if (child.geometry) {
+                        faces += child.geometry.index ? child.geometry.index.count / 3 : child.geometry.attributes.position.count / 3;
+                        verts += child.geometry.attributes.position.count;
+                    }
+                    if (child.material) mats.add(child.material.uuid);
+                }
+            });
+            document.getElementById('stat-verts').innerText = verts.toLocaleString();
+            document.getElementById('stat-faces').innerText = Math.round(faces).toLocaleString();
+            document.getElementById('stat-mats').innerText = mats.size;
+            document.getElementById('stat-meshes').innerText = meshes;
+        }
 
         let loadedCarTemplate = null;
 
-        function applyCarModel(sceneObj) {
-            loadedCarTemplate = sceneObj;
-            
-            // Update Player Car
-            scene.remove(playerCar);
-            const newPlayerMesh = loadedCarTemplate.clone();
-            newPlayerMesh.scale.set(1.2, 1.2, 1.2);
-            playerCar.children = newPlayerMesh.children;
-            playerCar.position.copy(car.position);
-            scene.add(playerCar);
-
-            // Update all AI cars
-            aiCars.forEach(ai => {
-                const pos = ai.mesh.position.clone();
-                const rotY = ai.mesh.rotation.y;
-                scene.remove(ai.mesh);
-
-                const newAiMesh = loadedCarTemplate.clone();
-                newAiMesh.scale.set(1.2, 1.2, 1.2);
-                newAiMesh.position.copy(pos);
-                newAiMesh.rotation.y = rotY;
-                scene.add(newAiMesh);
-                ai.mesh = newAiMesh;
-            });
+        function updateCarTransform() {
+            if (!loadedCarTemplate) return;
+            playerCar.scale.set(modelTransform.scale, modelTransform.scale, modelTransform.scale);
+            playerCar.position.set(
+                car.position.x + modelTransform.posX,
+                car.position.y + modelTransform.posY,
+                car.position.z + modelTransform.posZ
+            );
+            playerCar.rotation.set(
+                THREE.MathUtils.degToRad(modelTransform.rotX),
+                car.angle + THREE.MathUtils.degToRad(modelTransform.rotY),
+                THREE.MathUtils.degToRad(modelTransform.rotZ)
+            );
         }
 
-        // Load Car GLB
-        const gltfLoader = new THREE.GLTFLoader();
-        gltfLoader.load(carGlbUrl, (gltf) => {
-            applyCarModel(gltf.scene);
-        }, undefined, (err) => {
-            console.warn('Could not load amc_matador_sedan.glb directly, checking zip or falling back to geometric boxes:', err);
-        });
-
-        // Load Streetlights Zip
-        fetch(zipUrl)
-            .then(res => {
-                if (!res.ok) throw new Error('ZIP fetch failed');
-                return res.arrayBuffer();
-            })
-            .then(data => JSZip.loadAsync(data))
-            .then(zip => {
-                let gltfFileEntry = null;
-                const imageFiles = {};
-                let carGltfEntry = null;
-
-                const filePromises = [];
-                zip.forEach((relativePath, zipEntry) => {
-                    if (zipEntry.dir) return;
-                    const lowerName = relativePath.toLowerCase();
-                    if (lowerName.includes('matador') && (lowerName.endsWith('.gltf') || lowerName.endsWith('.glb'))) {
-                        carGltfEntry = zipEntry;
-                    } else if (lowerName.endsWith('.gltf') || lowerName.endsWith('.glb')) {
-                        gltfFileEntry = zipEntry;
-                    } else if (lowerName.endsWith('.png') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
-                        filePromises.push(
-                            zipEntry.async('blob').then(blob => {
-                                const filename = relativePath.split('/').pop();
-                                imageFiles[filename] = URL.createObjectURL(blob);
-                            })
-                        );
-                    }
-                });
-
-                return Promise.all(filePromises).then(() => {
-                    const manager = new THREE.LoadingManager();
-                    manager.setURLModifier(url => {
-                        const filename = url.split('/').pop();
-                        if (imageFiles[filename]) {
-                            return imageFiles[filename];
-                        }
-                        return url;
-                    });
-
-                    const loader = new THREE.GLTFLoader(manager);
-
-                    if (carGltfEntry) {
-                        carGltfEntry.async('text').then(text => {
-                            loader.parse(text, '', (gltf) => {
-                                applyCarModel(gltf.scene);
-                            });
-                        });
-                    }
-
-                    if (gltfFileEntry) {
-                        return gltfFileEntry.async('text').then(gltfText => {
-                            loader.parse(gltfText, '', (gltf) => {
-                                setupStreetlights(gltf.scene);
-                            }, err => {
-                                console.error('GLTF Parse Error:', err);
-                                fallbackStreetlights();
-                            });
-                        });
-                    } else {
-                        throw new Error('Streetlight file not found in zip');
-                    }
-                });
-            })
-            .catch(err => {
-                console.warn('ZIP extraction failed for streetlights, attempting direct load:', err);
-                const directLoader = new THREE.GLTFLoader();
-                directLoader.load('./double_stone_davit_streetlight.gltf', (gltf) => {
-                    setupStreetlights(gltf.scene);
-                }, undefined, () => {
-                    fallbackStreetlights();
-                });
-            });
-
-        function setupStreetlights(baseModel) {
+        function applyCarModel(sceneObj) {
+            loadedCarTemplate = sceneObj;
+            analyzeModel(loadedCarTemplate);
             document.getElementById('loader').style.opacity = '0';
             setTimeout(() => document.getElementById('loader').remove(), 500);
 
-            baseModel.scale.set(
-                streetlightConfig.scale, 
-                streetlightConfig.scale, 
-                streetlightConfig.scale
-            );
-
-            for (let i = 0; i < totalLightPoles; i++) {
-                const zOffset = (i * streetlightConfig.spacing) - (totalLightPoles * streetlightConfig.spacing / 2);
-
-                const centerInstance = baseModel.clone();
-                centerInstance.position.set(
-                    medianGrassX + streetlightConfig.center.x, 
-                    bridgeHeight + streetlightConfig.center.y, 
-                    zOffset + streetlightConfig.center.z
-                );
-                centerInstance.rotation.y = THREE.MathUtils.degToRad(streetlightConfig.center.rotY);
-                scene.add(centerInstance);
-                lightPoleGroup.push({ mesh: centerInstance, baseZ: zOffset });
-            }
+            scene.remove(playerCar);
+            const newPlayerMesh = loadedCarTemplate.clone();
+            playerCar.children = newPlayerMesh.children;
+            scene.add(playerCar);
+            updateCarTransform();
         }
 
-        function fallbackStreetlights() {
-            console.warn('Procedural center streetlights activated.');
-            document.getElementById('loader').innerText = 'Model failed to load. Using fallback.';
-            setTimeout(() => document.getElementById('loader').remove(), 2000);
+        // --- Bind UI Controls to Unlimited Precision State ---
+        function bindInputPair(rangeId, numberId, propertyName, isAngle = false) {
+            const range = document.getElementById(rangeId);
+            const number = document.getElementById(numberId);
 
-            for (let i = 0; i < totalLightPoles; i++) {
-                const zOffset = (i * streetlightConfig.spacing) - (totalLightPoles * streetlightConfig.spacing / 2);
-                const poleMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 });
-                const postGeo = new THREE.BoxGeometry(0.3, 7, 0.3);
+            range.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                number.value = val;
+                modelTransform[propertyName] = val;
+                updateCarTransform();
+            });
 
-                const post = new THREE.Mesh(postGeo, poleMat);
-                post.position.set(medianGrassX, bridgeHeight + 3.5, zOffset);
-                scene.add(post);
-                lightPoleGroup.push({ mesh: post, baseZ: zOffset });
-            }
+            number.addEventListener('input', (e) => {
+                const val = parseFloat(e.target.value);
+                if (!isNaN(val)) {
+                    modelTransform[propertyName] = val;
+                    range.value = Math.max(parseFloat(range.min), Math.min(parseFloat(range.max), val));
+                    updateCarTransform();
+                }
+            });
         }
 
-        // Game Loop
+        bindInputPair('scale-range', 'scale-number', 'scale');
+        bindInputPair('posx-range', 'posx-number', 'posX');
+        bindInputPair('posy-range', 'posy-number', 'posY');
+        bindInputPair('posz-range', 'posz-number', 'posZ');
+        bindInputPair('rotx-range', 'rotx-number', 'rotX', true);
+        bindInputPair('roty-range', 'roty-number', 'rotY', true);
+        bindInputPair('rotz-range', 'rotz-number', 'rotZ', true);
+
+        // --- Load GLTF Model ---
+        const gltfLoader = new THREE.GLTFLoader();
+        gltfLoader.load('./amc_matador_sedan.glb', (gltf) => {
+            applyCarModel(gltf.scene);
+        }, undefined, () => {
+            // Fallback zip load if direct glb fails
+            fetch('./amc_matador_sedan.zip')
+                .then(res => res.arrayBuffer())
+                .then(data => JSZip.loadAsync(data))
+                .then(zip => {
+                    let gltfEntry;
+                    zip.forEach((path, entry) => { if (path.endsWith('.gltf') || path.endsWith('.glb')) gltfEntry = entry; });
+                    return gltfEntry.async('text').then(text => {
+                        gltfLoader.parse(text, '', (gltf) => applyCarModel(gltf.scene));
+                    });
+                })
+                .catch(() => {
+                    document.getElementById('loader').innerText = 'Model failed to load. Using fallback box.';
+                    setTimeout(() => document.getElementById('loader').remove(), 2000);
+                    loadedCarTemplate = createFallbackCarMesh(0xffcc00);
+                    applyCarModel(loadedCarTemplate);
+                });
+        });
+
+        // --- Game Loop ---
         function animate() {
             requestAnimationFrame(animate);
 
-            let throttleInput = 0;
-            let brakeInput = 0;
-            let steeringAxis = 0;
-
-            const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-            let gp = null;
-            for (let i = 0; i < gamepads.length; i++) {
-                if (gamepads[i]) {
-                    gp = gamepads[i];
-                    break;
-                }
-            }
-
-            if (gp) {
-                if (!gamepadConnected) {
-                    gamepadConnected = true;
-                    document.getElementById('controller-status').innerText = `Connected: ${gp.id}`;
-                    document.getElementById('controller-status').style.color = '#55ff55';
+            if (!debugMode) {
+                let throttleInput = 0, brakeInput = 0, steeringAxis = 0;
+                const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+                for (let i = 0; i < gamepads.length; i++) {
+                    if (gamepads[i]) {
+                        steeringAxis = gamepads[i].axes[0] || 0;
+                        throttleInput = gamepads[i].buttons[7] && gamepads[i].buttons[7].pressed ? gamepads[i].buttons[7].value : 0;
+                        brakeInput = gamepads[i].buttons[6] && gamepads[i].buttons[6].pressed ? gamepads[i].buttons[6].value : 0;
+                        break;
+                    }
                 }
 
-                steeringAxis = gp.axes[0] || 0;
+                let accelerating = keys['ArrowUp'] || keys['w'] || keys['W'] || throttleInput > 0.1;
+                let reversing = keys['ArrowDown'] || keys['s'] || keys['S'] || brakeInput > 0.1;
 
-                if (gp.axes.length > 3) {
-                    let rawThrottle = gp.axes[2] !== undefined ? gp.axes[2] : 0;
-                    let rawBrake = gp.axes[3] !== undefined ? gp.axes[3] : 0;
-                    throttleInput = (1 - rawThrottle) / 2; 
-                    brakeInput = (1 - rawBrake) / 2;
-                } else {
-                    throttleInput = gp.buttons[7] && gp.buttons[7].pressed ? gp.buttons[7].value : 0;
-                    brakeInput = gp.buttons[6] && gp.buttons[6].pressed ? gp.buttons[6].value : 0;
-                }
-            }
+                if (accelerating) car.speed = Math.max(car.speed - car.accelerationRate, -car.maxSpeed);
+                else if (reversing) car.speed = Math.min(car.speed + car.brakingRate, car.maxSpeed * 0.5);
+                else car.speed *= (1 - car.friction);
 
-            let accelerating = keys['ArrowUp'] || keys['w'] || keys['W'] || throttleInput > 0.1;
-            let reversing = keys['ArrowDown'] || keys['s'] || keys['S'] || brakeInput > 0.1;
+                if (keys['ArrowLeft'] || keys['a'] || keys['A']) car.angle += 0.03;
+                if (keys['ArrowRight'] || keys['d'] || keys['D']) car.angle -= 0.03;
 
-            if (accelerating) {
-                let currentMag = Math.abs(car.speed);
-                let pedalFactor = throttleInput > 0 ? throttleInput : 1.0;
-                let dynamicAccel = car.accelerationRate * (1.0 - (currentMag / car.maxSpeed) * 0.7) * pedalFactor;
-                car.speed -= dynamicAccel;
-                car.speed = Math.max(car.speed, -car.maxSpeed);
-            } else if (reversing) {
-                let currentMag = Math.abs(car.speed);
-                let pedalFactor = brakeInput > 0 ? brakeInput : 1.0;
-                let dynamicAccel = car.brakingRate * pedalFactor;
-                car.speed += dynamicAccel;
-                car.speed = Math.min(car.speed, car.maxSpeed * 0.5);
+                car.position.x -= Math.sin(car.angle) * car.speed;
+                car.position.z -= Math.cos(car.angle) * car.speed;
+
+                updateCarTransform();
+                skyDome.position.copy(car.position);
+
+                camera.position.x = car.position.x - Math.sin(car.angle) * 12;
+                camera.position.y = bridgeHeight + 4;
+                camera.position.z = car.position.z - Math.cos(car.angle) * 12;
+                camera.lookAt(car.position.x + Math.sin(car.angle) * 10, bridgeHeight + 0.8, car.position.z + Math.cos(car.angle) * 10);
             } else {
-                if (car.speed > 0) car.speed = Math.max(0, car.speed - car.friction);
-                if (car.speed < 0) car.speed = Math.min(0, car.speed + car.friction);
+                orbitControls.update();
             }
-
-            let steerPressed = false;
-            let steerDir = 0;
-
-            if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
-                steerPressed = true;
-                steerDir = -1;
-                car.steeringInput = Math.min(1.0, car.steeringInput + 0.12);
-            } else if (keys['ArrowRight'] || keys['d'] || keys['D']) {
-                steerPressed = true;
-                steerDir = 1;
-                car.steeringInput = Math.min(1.0, car.steeringInput + 0.12);
-            } else if (Math.abs(steeringAxis) > 0.05) {
-                steerPressed = true;
-                steerDir = Math.sign(steeringAxis);
-                car.steeringInput = Math.min(1.0, Math.abs(steeringAxis));
-            } else {
-                car.steeringInput = Math.max(0.0, car.steeringInput - 0.2);
-            }
-
-            let targetDegrees = 0;
-            if (car.steeringInput > 0) {
-                if (car.steeringInput < 0.33) targetDegrees = 0.5;
-                else if (car.steeringInput < 0.66) targetDegrees = 2.0;
-                else targetDegrees = 5.0;
-            }
-
-            const currentTurnRate = THREE.MathUtils.degToRad(targetDegrees) * 0.08;
-
-            if (steerPressed) {
-                car.angle += steerDir * currentTurnRate * (car.speed !== 0 ? Math.sign(car.speed) : 1);
-            }
-
-            car.position.x -= Math.sin(car.angle) * car.speed;
-            car.position.z -= Math.cos(car.angle) * car.speed;
-
-            const margin = 0.5;
-            const leftRoadBound = forwardRoadX - roadWidth / 2 + margin;
-            const rightRoadBound = forwardRoadX + roadWidth / 2 - margin;
-            if (car.position.x < leftRoadBound) {
-                car.position.x = leftRoadBound;
-                car.speed = 0;
-            }
-            if (car.position.x > rightRoadBound) {
-                car.position.x = rightRoadBound;
-                car.speed = 0;
-            }
-
-            playerCar.position.copy(car.position);
-            playerCar.rotation.y = car.angle;
-
-            skyDome.position.copy(car.position);
-
-            const roadSpan = roadLength;
-            if (car.position.z < roadForward.position.z - roadSpan / 2 + 500) {
-                roadForward.position.z -= roadSpan;
-                roadBackward.position.z -= roadSpan;
-                leftOldFence.position.z = roadForward.position.z;
-                forwardRightNewFence.position.z = roadForward.position.z;
-                backwardLeftNewFence.position.z = roadForward.position.z;
-                rightOldFence.position.z = roadForward.position.z;
-                leftOuterBgFence.position.z = roadForward.position.z;
-                rightOuterBgFence.position.z = roadForward.position.z;
-            } else if (car.position.z > roadForward.position.z + roadSpan / 2 - 500) {
-                roadForward.position.z += roadSpan;
-                roadBackward.position.z += roadSpan;
-                leftOldFence.position.z = roadForward.position.z;
-                forwardRightNewFence.position.z = roadForward.position.z;
-                backwardLeftNewFence.position.z = roadForward.position.z;
-                rightOldFence.position.z = roadForward.position.z;
-                leftOuterBgFence.position.z = roadForward.position.z;
-                rightOuterBgFence.position.z = roadForward.position.z;
-            }
-
-            // Endless Infinity Loop for Grass Segments with 0.5 Overlap
-            const totalSegSpan = segmentsPerSide * grassSegmentLength;
-            for (let i = 0; i < segmentsPerSide; i++) {
-                const segs = [leftGrassSegments[i], medianGrassSegments[i], rightGrassSegments[i]];
-                segs.forEach(seg => {
-                    if (seg.position.z > car.position.z + grassSegmentLength * 1.5) {
-                        seg.position.z -= totalSegSpan;
-                    } else if (seg.position.z < car.position.z - totalSegSpan + grassSegmentLength * 1.5) {
-                        seg.position.z += totalSegSpan;
-                    }
-                });
-            }
-
-            pillars.forEach(pillar => {
-                const totalSpanPillars = totalPillars * pillarSpacing;
-                if (pillar.position.z > car.position.z + 150) {
-                    pillar.position.z -= totalSpanPillars;
-                } else if (pillar.position.z < car.position.z - totalSpanPillars + 150) {
-                    pillar.position.z += totalSpanPillars;
-                }
-            });
-
-            const totalSpanLights = totalLightPoles * streetlightConfig.spacing;
-            lightPoleGroup.forEach(l => {
-                if (l.mesh.position.z > car.position.z + 200) {
-                    l.mesh.position.z -= totalSpanLights;
-                } else if (l.mesh.position.z < car.position.z - totalSpanLights + 200) {
-                    l.mesh.position.z += totalSpanLights;
-                }
-            });
-
-            // Loop Buildings
-            factoryGroup.forEach(f => {
-                if (f.mesh.position.z > car.position.z + 600) {
-                    f.mesh.position.z -= f.span;
-                } else if (f.mesh.position.z < car.position.z - f.span + 600) {
-                    f.mesh.position.z += f.span;
-                }
-            });
-
-            aiCars.forEach(aiCar => {
-                const laneCoords = aiCar.isOncoming ? oncomingLaneCoordinates : playerLaneCoordinates;
-
-                if (aiCar.isOncoming) {
-                    aiCar.mesh.position.z += aiCar.forwardSpeed;
-                } else {
-                    aiCar.mesh.position.z -= aiCar.forwardSpeed;
-                }
-
-                if (aiCar.isChangingLane) {
-                    aiCar.laneChangeProgress += 0.022; 
-                    let t = aiCar.laneChangeProgress;
-
-                    const expT = Math.pow(t, 2.2) / (Math.pow(t, 2.2) + Math.pow(1 - t, 2.2));
-                    aiCar.mesh.position.x = THREE.MathUtils.lerp(aiCar.currentLaneX, aiCar.targetLaneX, expT);
-
-                    const laneChangeDirection = Math.sign(aiCar.targetLaneX - aiCar.currentLaneX);
-                    aiCar.mesh.rotation.y = (aiCar.isOncoming ? Math.PI : 0) - laneChangeDirection * 0.1 * Math.sin(t * Math.PI);
-
-                    if (aiCar.laneChangeProgress >= 1) {
-                        aiCar.laneIndex = aiCar.targetLaneIndex;
-                        aiCar.currentLaneX = aiCar.targetLaneX;
-                        aiCar.mesh.position.x = aiCar.currentLaneX;
-                        aiCar.mesh.rotation.y = aiCar.isOncoming ? Math.PI : 0; 
-                        aiCar.isChangingLane = false;
-                    }
-                } else {
-                    aiCar.mesh.position.x = aiCar.currentLaneX;
-                    aiCar.mesh.rotation.y = aiCar.isOncoming ? Math.PI : 0;
-
-                    if (Math.random() < 0.04) {
-                        let obstacleAhead = null;
-                        let minDistance = 30;
-
-                        aiCars.forEach(other => {
-                            if (other !== aiCar && other.isOncoming === aiCar.isOncoming && other.laneIndex === aiCar.laneIndex) {
-                                const dist = aiCar.isOncoming ? (other.mesh.position.z - aiCar.mesh.position.z) : (aiCar.mesh.position.z - other.mesh.position.z);
-                                if (dist > 0 && dist < minDistance) {
-                                    minDistance = dist;
-                                    obstacleAhead = other;
-                                }
-                            }
-                        });
-
-                        if (!aiCar.isOncoming) {
-                            const distToPlayer = aiCar.mesh.position.z - car.position.z;
-                            if (distToPlayer < 0 && distToPlayer > -30 && Math.abs(aiCar.mesh.position.x - car.position.x) < 2.5) {
-                                obstacleAhead = playerCar;
-                            }
-                        }
-
-                        const speedDifferenceThreshold = 0.12; 
-                        const obstacleSpeed = obstacleAhead === playerCar ? car.speed : (obstacleAhead ? obstacleAhead.forwardSpeed : 0);
-
-                        if (obstacleAhead && (aiCar.forwardSpeed - obstacleSpeed >= speedDifferenceThreshold)) {
-                            const adjacentLaneIndices = [];
-                            if (aiCar.laneIndex > 0) adjacentLaneIndices.push(aiCar.laneIndex - 1);
-                            if (aiCar.laneIndex < laneCoords.length - 1) adjacentLaneIndices.push(aiCar.laneIndex + 1);
-
-                            adjacentLaneIndices.sort(() => Math.random() - 0.5);
-
-                            for (let targetIdx of adjacentLaneIndices) {
-                                const targetX = laneCoords[targetIdx];
-                                let targetLaneIsSafe = true;
-
-                                aiCars.forEach(other => {
-                                    if (other !== aiCar && other.isOncoming === aiCar.isOncoming && other.laneIndex === targetIdx) {
-                                        const distZ = Math.abs(aiCar.mesh.position.z - other.mesh.position.z);
-                                        if (distZ < 15) targetLaneIsSafe = false;
-                                    }
-                                });
-
-                                if (targetLaneIsSafe) {
-                                    aiCar.targetLaneIndex = targetIdx;
-                                    aiCar.targetLaneX = targetX;
-                                    aiCar.isChangingLane = true;
-                                    aiCar.laneChangeProgress = 0;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Seamless Continuous Recycling for both directions
-                if (!aiCar.isOncoming && aiCar.mesh.position.z > car.position.z + 80) {
-                    aiCar.mesh.position.z = car.position.z - 900 - Math.random() * 100;
-                    const randomLaneIdx = Math.floor(Math.random() * playerLaneCoordinates.length);
-                    aiCar.laneIndex = randomLaneIdx;
-                    aiCar.currentLaneX = playerLaneCoordinates[randomLaneIdx];
-                    aiCar.targetLaneIndex = randomLaneIdx;
-                    aiCar.targetLaneX = aiCar.currentLaneX;
-                    aiCar.mesh.position.x = aiCar.currentLaneX;
-                    aiCar.mesh.rotation.y = 0;
-                } else if (aiCar.isOncoming && aiCar.mesh.position.z > car.position.z + 200) {
-                    aiCar.mesh.position.z = car.position.z - 1200 - Math.random() * 300;
-                    const randomLaneIdx = Math.floor(Math.random() * oncomingLaneCoordinates.length);
-                    aiCar.laneIndex = randomLaneIdx;
-                    aiCar.currentLaneX = oncomingLaneCoordinates[randomLaneIdx];
-                    aiCar.targetLaneIndex = randomLaneIdx;
-                    aiCar.targetLaneX = aiCar.currentLaneX;
-                    aiCar.mesh.position.x = aiCar.currentLaneX;
-                    aiCar.mesh.rotation.y = Math.PI;
-                }
-            });
-
-            const camDist = 12;
-            const camHeight = 4;
-            camera.position.x = car.position.x - Math.sin(car.angle) * camDist;
-            camera.position.y = bridgeHeight + camHeight;
-            camera.position.z = car.position.z - Math.cos(car.angle) * camDist;
-
-            const lookAheadX = car.position.x + Math.sin(car.angle) * 10;
-            const lookAheadZ = car.position.z + Math.cos(car.angle) * 10;
-            camera.lookAt(lookAheadX, bridgeHeight + 0.8, lookAheadZ);
 
             renderer.render(scene, camera);
         }
