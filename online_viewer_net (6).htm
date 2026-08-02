@@ -52,9 +52,9 @@
 
     <div id="loader">Loading Assets...</div>
     <div id="hud">Controller/Wheel: <span id="controller-status" style="color: #ff5555;">Not Detected (Press any button/wheel pedal)</span></div>
-    <div id="instructions">Use <strong>W/S</strong> or Pedals to accelerate/brake. Use <strong>A/D</strong> or Wheel to steer. Center median double-stone-davit streetlights, heavy opposite AI traffic, extended outer grass plains, 1/30 skyscraper mega-factories.</div>
+    <div id="instructions">Use <strong>W/S</strong> or Pedals to accelerate/brake. Use <strong>A/D</strong> or Wheel to steer. Center median double-stone-davit streetlights, AMC Matador Sedan traffic models, continuous opposite AI traffic.</div>
 
-    <!-- Load Three.js, GLTFLoader, and DRACOLoader via CDN -->
+    <!-- Load Three.js, GLTFLoader, DRACOLoader, and JSZip via CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
@@ -376,7 +376,7 @@
             }
 
             const fWidth = isSkyscraperMega ? (90 + Math.random() * 40) : (35 + Math.random() * 30); 
-            const fHeight = isSkyscraperMega ? (110 + Math.random() * 70) : (12 + Math.random() * 10); 
+            const fHeight = isSkyscraperMega ? ((110 + Math.random() * 70) * (2/3) * (2/3)) : ((12 + Math.random() * 10) * (2/3)); 
             const fLength = isSkyscraperMega ? (300 + Math.random() * 200) : (70 + Math.random() * 50); 
 
             const wallColor = greyShades[Math.floor(Math.random() * greyShades.length)];
@@ -497,33 +497,36 @@
         const playerLaneCoordinates = [forwardRoadX - 4.5, forwardRoadX, forwardRoadX + 4.5];
         const oncomingLaneCoordinates = [backwardRoadX - 4.5, backwardRoadX, backwardRoadX + 4.5];
 
-        // Player Car Mesh
-        const playerCar = new THREE.Group();
-        const bodyGeo = new THREE.BoxGeometry(1.8, 1, 3.8);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffcc00 }); 
-        const carBody = new THREE.Mesh(bodyGeo, bodyMat);
-        carBody.position.y = 0.5;
-        playerCar.add(carBody);
+        // Fallback Player/AI Car Mesh Generator (used while GLB loads or if missing)
+        function createFallbackCarMesh(colorHex = 0xffcc00) {
+            const group = new THREE.Group();
+            const bodyGeo = new THREE.BoxGeometry(1.8, 1, 3.8);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex }); 
+            const carBody = new THREE.Mesh(bodyGeo, bodyMat);
+            carBody.position.y = 0.5;
+            group.add(carBody);
 
-        const frontGeo = new THREE.BoxGeometry(1.2, 0.3, 0.4);
-        const frontMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
-        const carFront = new THREE.Mesh(frontGeo, frontMat);
-        carFront.position.set(0, 0.5, -1.8); 
-        playerCar.add(carFront);
+            const frontGeo = new THREE.BoxGeometry(1.2, 0.3, 0.4);
+            const frontMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const carFront = new THREE.Mesh(frontGeo, frontMat);
+            carFront.position.set(0, 0.5, -1.8); 
+            group.add(carFront);
+            return group;
+        }
 
+        // Initialize Player Car with Fallback first
+        const playerCar = createFallbackCarMesh(0xffcc00);
         playerCar.position.copy(car.position);
         scene.add(playerCar);
 
-        // AI Traffic Pool (Same Direction - 20 cars)
+        // AI Traffic Containers
         const aiCars = [];
-        const aiCarGeo = new THREE.BoxGeometry(1.8, 1, 3.8);
         const aiColors = [0xcc3333, 0x3366cc, 0x228833, 0xcc6600, 0x9933cc, 0xe6e6e6];
 
+        // Populate placeholder AI meshes immediately so simulation runs instantly
         playerLaneCoordinates.forEach((laneX, laneIndex) => {
             for (let i = 0; i < 20; i++) {
-                const aiMat = new THREE.MeshStandardMaterial({ color: aiColors[Math.floor(Math.random() * aiColors.length)] });
-                const aiMesh = new THREE.Mesh(aiCarGeo, aiMat);
-                
+                const aiMesh = createFallbackCarMesh(aiColors[Math.floor(Math.random() * aiColors.length)]);
                 const initialZ = (i * 60) - 400 + (Math.random() * 20);
                 aiMesh.position.set(laneX, bridgeHeight + 0.5, initialZ);
                 scene.add(aiMesh);
@@ -542,13 +545,10 @@
             }
         });
 
-        // AI Oncoming Traffic Pool (Opposite Direction - 45 cars)
         oncomingLaneCoordinates.forEach((laneX, laneIndex) => {
             for (let i = 0; i < 45; i++) {
-                const aiMat = new THREE.MeshStandardMaterial({ color: aiColors[Math.floor(Math.random() * aiColors.length)] });
-                const aiMesh = new THREE.Mesh(aiCarGeo, aiMat);
-                
-                const initialZ = (i * 35) - 600 + (Math.random() * 20);
+                const aiMesh = createFallbackCarMesh(aiColors[Math.floor(Math.random() * aiColors.length)]);
+                const initialZ = (i * 70) - 1500 + (Math.random() * 40);
                 aiMesh.position.set(laneX, bridgeHeight + 0.5, initialZ);
                 aiMesh.rotation.y = Math.PI; 
                 scene.add(aiMesh);
@@ -567,12 +567,49 @@
             }
         });
 
-        // Load Zip Containing GLTF Street Light Model (Center Median Double-Sided)
+        // --- Load Assets (Streetlights Zip & AMC Matador Sedan GLB) ---
         const lightPoleGroup = [];
         const totalLightPoles = 35;
-        const gltfLoader = new THREE.GLTFLoader();
         const zipUrl = './double_stone_davit_streetlight.zip';
+        const carGlbUrl = './amc_matador_sedan.glb';
 
+        let loadedCarTemplate = null;
+
+        function applyCarModel(sceneObj) {
+            loadedCarTemplate = sceneObj;
+            
+            // Update Player Car
+            scene.remove(playerCar);
+            const newPlayerMesh = loadedCarTemplate.clone();
+            newPlayerMesh.scale.set(1.2, 1.2, 1.2);
+            playerCar.children = newPlayerMesh.children;
+            playerCar.position.copy(car.position);
+            scene.add(playerCar);
+
+            // Update all AI cars
+            aiCars.forEach(ai => {
+                const pos = ai.mesh.position.clone();
+                const rotY = ai.mesh.rotation.y;
+                scene.remove(ai.mesh);
+
+                const newAiMesh = loadedCarTemplate.clone();
+                newAiMesh.scale.set(1.2, 1.2, 1.2);
+                newAiMesh.position.copy(pos);
+                newAiMesh.rotation.y = rotY;
+                scene.add(newAiMesh);
+                ai.mesh = newAiMesh;
+            });
+        }
+
+        // Load Car GLB
+        const gltfLoader = new THREE.GLTFLoader();
+        gltfLoader.load(carGlbUrl, (gltf) => {
+            applyCarModel(gltf.scene);
+        }, undefined, (err) => {
+            console.warn('Could not load amc_matador_sedan.glb directly, checking zip or falling back to geometric boxes:', err);
+        });
+
+        // Load Streetlights Zip
         fetch(zipUrl)
             .then(res => {
                 if (!res.ok) throw new Error('ZIP fetch failed');
@@ -581,17 +618,17 @@
             .then(data => JSZip.loadAsync(data))
             .then(zip => {
                 let gltfFileEntry = null;
-                let gltfFileName = '';
                 const imageFiles = {};
+                let carGltfEntry = null;
 
-                // Find files in zip
                 const filePromises = [];
                 zip.forEach((relativePath, zipEntry) => {
                     if (zipEntry.dir) return;
                     const lowerName = relativePath.toLowerCase();
-                    if (lowerName.endsWith('.gltf') || lowerName.endsWith('.glb')) {
+                    if (lowerName.includes('matador') && (lowerName.endsWith('.gltf') || lowerName.endsWith('.glb'))) {
+                        carGltfEntry = zipEntry;
+                    } else if (lowerName.endsWith('.gltf') || lowerName.endsWith('.glb')) {
                         gltfFileEntry = zipEntry;
-                        gltfFileName = relativePath;
                     } else if (lowerName.endsWith('.png') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
                         filePromises.push(
                             zipEntry.async('blob').then(blob => {
@@ -603,32 +640,43 @@
                 });
 
                 return Promise.all(filePromises).then(() => {
-                    if (!gltfFileEntry) throw new Error('No .gltf or .glb found inside zip');
-                    return gltfFileEntry.async('text').then(gltfText => {
-                        // Create custom manager for blob textures if gltf format
-                        const manager = new THREE.LoadingManager();
-                        manager.setURLModifier(url => {
-                            const filename = url.split('/').pop();
-                            if (imageFiles[filename]) {
-                                return imageFiles[filename];
-                            }
-                            return url;
-                        });
-
-                        const loader = new THREE.GLTFLoader(manager);
-                        loader.parse(gltfText, '', (gltf) => {
-                            setupStreetlights(gltf.scene);
-                        }, err => {
-                            console.error('GLTF Parse Error:', err);
-                            fallbackStreetlights();
-                        });
+                    const manager = new THREE.LoadingManager();
+                    manager.setURLModifier(url => {
+                        const filename = url.split('/').pop();
+                        if (imageFiles[filename]) {
+                            return imageFiles[filename];
+                        }
+                        return url;
                     });
+
+                    const loader = new THREE.GLTFLoader(manager);
+
+                    if (carGltfEntry) {
+                        carGltfEntry.async('text').then(text => {
+                            loader.parse(text, '', (gltf) => {
+                                applyCarModel(gltf.scene);
+                            });
+                        });
+                    }
+
+                    if (gltfFileEntry) {
+                        return gltfFileEntry.async('text').then(gltfText => {
+                            loader.parse(gltfText, '', (gltf) => {
+                                setupStreetlights(gltf.scene);
+                            }, err => {
+                                console.error('GLTF Parse Error:', err);
+                                fallbackStreetlights();
+                            });
+                        });
+                    } else {
+                        throw new Error('Streetlight file not found in zip');
+                    }
                 });
             })
             .catch(err => {
-                console.warn('ZIP extraction failed, attempting direct load or fallback:', err);
-                // Fallback attempt to load directly if it was actually unzipped or direct glb
-                gltfLoader.load('./double_stone_davit_streetlight.gltf', (gltf) => {
+                console.warn('ZIP extraction failed for streetlights, attempting direct load:', err);
+                const directLoader = new THREE.GLTFLoader();
+                directLoader.load('./double_stone_davit_streetlight.gltf', (gltf) => {
                     setupStreetlights(gltf.scene);
                 }, undefined, () => {
                     fallbackStreetlights();
@@ -931,7 +979,7 @@
                     }
                 }
 
-                // Seamless Recycling cleanly ahead/behind car bounds
+                // Seamless Continuous Recycling for both directions
                 if (!aiCar.isOncoming && aiCar.mesh.position.z > car.position.z + 80) {
                     aiCar.mesh.position.z = car.position.z - 900 - Math.random() * 100;
                     const randomLaneIdx = Math.floor(Math.random() * playerLaneCoordinates.length);
@@ -941,8 +989,8 @@
                     aiCar.targetLaneX = aiCar.currentLaneX;
                     aiCar.mesh.position.x = aiCar.currentLaneX;
                     aiCar.mesh.rotation.y = 0;
-                } else if (aiCar.isOncoming && aiCar.mesh.position.z < car.position.z - 120) {
-                    aiCar.mesh.position.z = car.position.z + 900 + Math.random() * 100;
+                } else if (aiCar.isOncoming && aiCar.mesh.position.z > car.position.z + 200) {
+                    aiCar.mesh.position.z = car.position.z - 1200 - Math.random() * 300;
                     const randomLaneIdx = Math.floor(Math.random() * oncomingLaneCoordinates.length);
                     aiCar.laneIndex = randomLaneIdx;
                     aiCar.currentLaneX = oncomingLaneCoordinates[randomLaneIdx];
