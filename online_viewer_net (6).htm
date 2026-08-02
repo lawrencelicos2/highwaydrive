@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Elevated Highway Car Sim - street_light.glb</title>
+    <title>3D Dual-Carriageway Highway Sim</title>
     <style>
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background-color: #1a0f1a;
+            background-color: #D35400;
             font-family: sans-serif;
         }
         #instructions {
@@ -50,41 +50,65 @@
 </head>
 <body>
 
-    <div id="loader">Loading street_light.glb Model...</div>
+    <div id="loader">Loading Assets...</div>
     <div id="hud">Controller/Wheel: <span id="controller-status" style="color: #ff5555;">Not Detected (Press any button/wheel pedal)</span></div>
-    <div id="instructions">Use <strong>W/S</strong> or Pedals to accelerate/brake. Use <strong>A/D</strong> or Wheel to steer (0.5° ➔ 2° ➔ 5°). Facing oncoming traffic!</div>
+    <div id="instructions">Use <strong>W/S</strong> or Pedals to accelerate/brake. Use <strong>A/D</strong> or Wheel to steer. Center median double-stone-davit streetlights, heavy opposite AI traffic, extended outer grass plains, 1/30 skyscraper mega-factories.</div>
 
     <!-- Load Three.js, GLTFLoader, and DRACOLoader via CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/JSZip.js"></script>
 
     <script>
-        // --- Updated Streetlight Config ---
+        // --- Streetlight Config (Center Median Double-Sided) ---
         const streetlightConfig = {
             "scale": 0.02,
-            "left": { "x": -14, "y": 15 - 15, "z": 0, "rotY": 0 },
-            "right": { "x": 14, "y": 15 - 15, "z": 0, "rotY": 180 },
+            "center": { "x": 0, "y": 15 - 15, "z": 0, "rotY": 0 },
             "spacing": 122.5
         };
 
-        // --- Scene Setup with Warm Sunset Atmosphere ---
+        // --- Scene Setup with Sunset Atmosphere ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xd97757); 
-        scene.fog = new THREE.FogExp2(0xd97757, 0.0018); 
+        scene.background = new THREE.Color(0xD35400); 
+        scene.fog = new THREE.FogExp2(0xD35400, 0.001); 
 
-        // Sunset sky plane & soft clouds
-        const cloudGeo = new THREE.PlaneGeometry(6000, 6000);
-        const cloudMat = new THREE.MeshStandardMaterial({ 
-            color: 0x8c4b5e, 
-            transparent: true, 
-            opacity: 0.4, 
-            depthWrite: false 
+        // Sunset Sky Dome
+        const skyGeo = new THREE.SphereGeometry(2500, 32, 15);
+        const skyMat = new THREE.ShaderMaterial({
+            uniforms: {
+                topColor: { value: new THREE.Color(0x8E44AD) },
+                middleColor: { value: new THREE.Color(0xE67E22) },
+                bottomColor: { value: new THREE.Color(0xC0392B) }
+            },
+            vertexShader: `
+                varying vec3 vWorldPosition;
+                void main() {
+                    vec4 worldPosition = modelMatrix * vec4(position, 1.0);
+                    vWorldPosition = worldPosition.xyz;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 topColor;
+                uniform vec3 middleColor;
+                uniform vec3 bottomColor;
+                varying vec3 vWorldPosition;
+                void main() {
+                    float py = normalize(vWorldPosition).y;
+                    vec3 color;
+                    if (py > 0.0) {
+                        color = mix(middleColor, topColor, pow(py, 0.6));
+                    } else {
+                        color = mix(middleColor, bottomColor, pow(abs(py), 0.6));
+                    }
+                    gl_FragColor = vec4(color, 1.0);
+                }
+            `,
+            side: THREE.BackSide
         });
-        const cloudSky = new THREE.Mesh(cloudGeo, cloudMat);
-        cloudSky.rotation.x = Math.PI / 2;
-        cloudSky.position.set(0, 400, 0);
-        scene.add(cloudSky);
+        const skyDome = new THREE.Mesh(skyGeo, skyMat);
+        scene.add(skyDome);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 3000);
         
@@ -93,16 +117,17 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.body.appendChild(renderer.domElement);
 
-        // Sunset Lighting
-        const ambientLight = new THREE.AmbientLight(0xffb380, 0.7);
+        // Warm Sunset Lighting
+        const ambientLight = new THREE.AmbientLight(0xffb74d, 0.7);
         scene.add(ambientLight);
-        const directionalLight = new THREE.DirectionalLight(0xff6600, 0.9);
-        directionalLight.position.set(100, 30, 50);
+        const directionalLight = new THREE.DirectionalLight(0xff5722, 1.2);
+        directionalLight.position.set(-300, 150, -300);
         scene.add(directionalLight);
 
         // --- Car Variables ---
+        const bridgeHeight = 15; 
         const car = {
-            position: new THREE.Vector3(0, 15 + 0.5, -60), 
+            position: new THREE.Vector3(0, bridgeHeight + 0.5, -60), 
             angle: Math.PI,        
             speed: 0,              
             maxSpeed: 1.65,        
@@ -116,7 +141,7 @@
         window.addEventListener('keydown', e => keys[e.key] = true);
         window.addEventListener('keyup', e => keys[e.key] = false);
 
-        // --- Gamepad / Steering Wheel & Pedal Integration ---
+        // --- Gamepad / Steering Wheel Integration ---
         let gamepadConnected = false;
         window.addEventListener("gamepadconnected", (e) => {
             gamepadConnected = true;
@@ -129,8 +154,10 @@
             document.getElementById('controller-status').style.color = '#ff5555';
         });
 
-        // --- Load External Road Texture ---
+        // --- Load Textures ---
         const textureLoader = new THREE.TextureLoader();
+        
+        // Road Texture
         const roadTexture = textureLoader.load(
             'https://cdn.cgbookcase.cloud/file/cgbookcase/textures/downloads/Three_lane_road_clean_01/Three_lane_road_clean_01_1K_Height.png',
             (texture) => {
@@ -139,49 +166,315 @@
                 texture.repeat.set(40, 1); 
                 texture.center.set(0.5, 0.5);
                 texture.rotation = Math.PI / 2; 
-
                 texture.generateMipmaps = true;
                 texture.minFilter = THREE.LinearMipmapLinearFilter;
                 texture.magFilter = THREE.LinearFilter;
                 texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-
                 texture.needsUpdate = true;
-            },
-            undefined,
-            (err) => {
-                console.warn('Texture load error.', err);
             }
         );
 
-        // --- Elevated Road & Bridge Setup (Road Width reduced by another 3, from 24 down to 21) ---
-        const roadWidth = 21; 
+        // --- Transparent PNG Barrier Textures ---
+        const barrierHeight = 3.0 * 0.5; 
         const roadLength = 3500;
-        const bridgeHeight = 15; 
+
+        const leftBarrierTexture = textureLoader.load(
+            'https://yt3.ggpht.com/P_LsazD7dQwNYDwJITca7yCz8er77QIzgIuMxy4fAmFTaQQvMKtYA-ab-5Ya0-AHmFQf6ixSqJPllA=s612-rw-nd-v1',
+            (texture) => {
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(120, 1); 
+                texture.colorSpace = THREE.SRGBColorSpace;
+                texture.generateMipmaps = true;
+                texture.minFilter = THREE.LinearMipmapLinearFilter;
+                texture.magFilter = THREE.LinearFilter;
+                texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                texture.needsUpdate = true;
+            }
+        );
+
+        const rightBarrierTexture = textureLoader.load(
+            'https://yt3.ggpht.com/_3Clp_kHSSj41OKTv_CHRbSXXOtx5S1xQutOxXYYRJrO8RFbxqe_cQAUIOdXVBgFKHgZw3AY-wVWXg=s600-rw-nd-v1',
+            (texture) => {
+                texture.wrapS = THREE.RepeatWrapping;
+                texture.wrapT = THREE.RepeatWrapping;
+                
+                texture.image = texture.image || {};
+                const updateRepeat = (img) => {
+                    const aspect = (img.naturalWidth && img.naturalHeight) ? (img.naturalWidth / img.naturalHeight) : 1.5;
+                    const tileWidthWorld = barrierHeight * aspect; 
+                    const repeats = (roadLength / tileWidthWorld) * 1.05;
+                    texture.repeat.set(repeats, 1.02);
+                    texture.offset.set(0, -0.01);
+                    texture.needsUpdate = true;
+                };
+                
+                if (texture.image.complete) {
+                    updateRepeat(texture.image);
+                } else {
+                    texture.image.onload = () => updateRepeat(texture.image);
+                }
+
+                texture.colorSpace = THREE.SRGBColorSpace;
+                texture.generateMipmaps = true;
+                texture.minFilter = THREE.LinearMipmapLinearFilter;
+                texture.magFilter = THREE.LinearFilter;
+                texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+                texture.needsUpdate = true;
+            }
+        );
+
+        // --- Grass Texture ---
+        const grassImg = new Image();
+        grassImg.crossOrigin = "anonymous";
+        grassImg.src = "https://tse1.mm.bing.net/th/id/OIP.izPAaDMt80oHJfPYnQM9xQHaHa?r=0&rs=1&pid=ImgDetMain&o=7&rm=3";
+        
+        const grassTexture = new THREE.CanvasTexture();
+        grassImg.onload = () => {
+            const canvas = document.createElement('canvas');
+            const subSize = 512;
+            canvas.width = subSize;
+            canvas.height = subSize;
+            const ctx = canvas.getContext('2d');
+
+            ctx.drawImage(grassImg, 0, 0, subSize, subSize);
+
+            ctx.globalCompositeOperation = 'overlay';
+            const grad = ctx.createRadialGradient(subSize*0.3, subSize*0.7, 10, subSize*0.3, subSize*0.7, subSize*0.6);
+            grad.addColorStop(0, 'rgba(180, 140, 90, 0.45)'); 
+            grad.addColorStop(0.5, 'rgba(140, 105, 60, 0.25)'); 
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, subSize, subSize);
+
+            grassTexture.image = canvas;
+            grassTexture.wrapS = THREE.RepeatWrapping;
+            grassTexture.wrapT = THREE.RepeatWrapping;
+            grassTexture.colorSpace = THREE.SRGBColorSpace;
+            grassTexture.generateMipmaps = true;
+            grassTexture.minFilter = THREE.LinearMipmapLinearFilter;
+            grassTexture.magFilter = THREE.LinearFilter;
+            grassTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            grassTexture.needsUpdate = true;
+        };
+
+        // --- Layout Architecture ---
+        const roadWidth = 21;
+        const outerGrassWidth = 350; 
+        const medianGrassWidth = 6.0;
+
+        const leftOldFenceX = -60; 
+        const forwardRoadX = leftOldFenceX + (roadWidth / 2);
+        const forwardRightNewFenceX = forwardRoadX + (roadWidth / 2);
+        const medianGrassX = forwardRightNewFenceX + (medianGrassWidth / 2);
+        const backwardLeftNewFenceX = medianGrassX + (medianGrassWidth / 2);
+        const backwardRoadX = backwardLeftNewFenceX + (roadWidth / 2);
+        const rightOldFenceX = backwardRoadX + (roadWidth / 2);
+
+        const leftOuterGrassX = forwardRoadX - (roadWidth / 2) - (outerGrassWidth / 2);
+        const rightOuterGrassX = backwardRoadX + (roadWidth / 2) + (outerGrassWidth / 2);
+
+        const leftOuterBackgroundFenceX = leftOuterGrassX - (outerGrassWidth / 2);
+        const rightOuterBackgroundFenceX = rightOuterGrassX + (outerGrassWidth / 2);
 
         const roadMat = new THREE.MeshStandardMaterial({ 
             map: roadTexture,
             roughness: 0.8,
             polygonOffset: true,
-            polygonOffsetFactor: 1,
-            polygonOffsetUnits: 1
+            polygonOffsetFactor: -4.0,
+            polygonOffsetUnits: -4.0
         });
         const roadGeo = new THREE.PlaneGeometry(roadWidth, roadLength);
-        const road = new THREE.Mesh(roadGeo, roadMat);
-        road.rotation.x = -Math.PI / 2;
-        road.position.set(0, bridgeHeight, 0);
-        scene.add(road);
 
-        // Bridge Side Fences
-        const fenceMat = new THREE.MeshStandardMaterial({ color: 0x666666 });
-        const fenceGeo = new THREE.BoxGeometry(0.5, 1.5, roadLength);
+        // 1. Forward Road
+        const roadForward = new THREE.Mesh(roadGeo, roadMat);
+        roadForward.rotation.x = -Math.PI / 2;
+        roadForward.position.set(forwardRoadX, bridgeHeight + 0.01, 0);
+        scene.add(roadForward);
+
+        // 2. Backward (Opposite) Road
+        const roadBackward = new THREE.Mesh(roadGeo, roadMat);
+        roadBackward.rotation.x = -Math.PI / 2;
+        roadBackward.position.set(backwardRoadX, bridgeHeight + 0.01, 0);
+        scene.add(roadBackward);
+
+        // --- Road Barrier Fences ---
+        const barrierLength = roadLength + 2.0; 
+        const barrierGeo = new THREE.PlaneGeometry(barrierLength, barrierHeight);
+        const barrierHeightOffset = -0.6 * 0.5;
+
+        const oldFenceMat = new THREE.MeshStandardMaterial({ 
+            map: leftBarrierTexture, 
+            transparent: true,
+            alphaTest: 0.05, 
+            roughness: 0.5,
+            side: THREE.DoubleSide 
+        });
+
+        const newFenceMat = new THREE.MeshStandardMaterial({ 
+            map: rightBarrierTexture, 
+            transparent: true,
+            alphaTest: 0.05, 
+            roughness: 0.5,
+            side: THREE.DoubleSide 
+        });
+
+        const leftOldFence = new THREE.Mesh(barrierGeo, oldFenceMat);
+        leftOldFence.position.set(leftOldFenceX, bridgeHeight + (barrierHeight / 2) + barrierHeightOffset, 0); 
+        leftOldFence.rotation.y = Math.PI / 2;
+        scene.add(leftOldFence);
+
+        const forwardRightNewFence = new THREE.Mesh(barrierGeo, newFenceMat);
+        forwardRightNewFence.position.set(forwardRightNewFenceX, bridgeHeight + (barrierHeight / 2) + barrierHeightOffset, 0); 
+        forwardRightNewFence.rotation.y = -Math.PI / 2;
+        scene.add(forwardRightNewFence);
+
+        const backwardLeftNewFence = new THREE.Mesh(barrierGeo, newFenceMat);
+        backwardLeftNewFence.position.set(backwardLeftNewFenceX, bridgeHeight + (barrierHeight / 2) + barrierHeightOffset, 0); 
+        backwardLeftNewFence.rotation.y = Math.PI / 2;
+        scene.add(backwardLeftNewFence);
+
+        const rightOldFence = new THREE.Mesh(barrierGeo, oldFenceMat);
+        rightOldFence.position.set(rightOldFenceX, bridgeHeight + (barrierHeight / 2) + barrierHeightOffset, 0); 
+        rightOldFence.rotation.y = Math.PI / 2;
+        scene.add(rightOldFence);
+
+        // --- Double-Size Outer Background Fences ---
+        const bgFenceHeight = barrierHeight * 2; 
+        const bgFenceGeo = new THREE.PlaneGeometry(barrierLength, bgFenceHeight);
+        const bgFenceHeightOffset = -1.2 * 0.5; 
+
+        const leftOuterBgFence = new THREE.Mesh(bgFenceGeo, newFenceMat);
+        leftOuterBgFence.position.set(leftOuterBackgroundFenceX, bridgeHeight + (bgFenceHeight / 2) + bgFenceHeightOffset, 0);
+        leftOuterBgFence.rotation.y = Math.PI / 2;
+        scene.add(leftOuterBgFence);
+
+        const rightOuterBgFence = new THREE.Mesh(bgFenceGeo, newFenceMat);
+        rightOuterBgFence.position.set(rightOuterBackgroundFenceX, bridgeHeight + (bgFenceHeight / 2) + bgFenceHeightOffset, 0);
+        rightOuterBgFence.rotation.y = Math.PI / 2;
+        scene.add(rightOuterBgFence);
+
+        // --- Sparse Roofless Warehouses and 1/30 Skyscraper Mega-Factories ---
+        const factoryX = (forwardRoadX - roadWidth / 2) - 45;
+        const factoryGroup = [];
+        const greyShades = [0x555555, 0x666666, 0x777777, 0x4a4a4a, 0x5e5e5e, 0x6c7a89];
         
-        const leftFence = new THREE.Mesh(fenceGeo, fenceMat);
-        leftFence.position.set(-roadWidth / 2, bridgeHeight + 0.75, 0);
-        scene.add(leftFence);
+        const factorySpacing = 160;
+        const totalFactories = 45;
+        const totalSpan = totalFactories * factorySpacing;
 
-        const rightFence = new THREE.Mesh(fenceGeo, fenceMat);
-        rightFence.position.set(roadWidth / 2, bridgeHeight + 0.75, 0);
-        scene.add(rightFence);
+        for (let i = 0; i < totalFactories; i++) {
+            const zPos = (i * factorySpacing) - (totalSpan / 2) + (Math.random() * 40 - 20);
+            
+            const roll = Math.random();
+            const isSkyscraperMega = (roll < 1/30); 
+            const isWarehouse = (!isSkyscraperMega && roll < (1/30 + 1/7)); 
+
+            if (!isSkyscraperMega && !isWarehouse) {
+                continue; 
+            }
+
+            const fWidth = isSkyscraperMega ? (90 + Math.random() * 40) : (35 + Math.random() * 30); 
+            const fHeight = isSkyscraperMega ? (110 + Math.random() * 70) : (12 + Math.random() * 10); 
+            const fLength = isSkyscraperMega ? (300 + Math.random() * 200) : (70 + Math.random() * 50); 
+
+            const wallColor = greyShades[Math.floor(Math.random() * greyShades.length)];
+            const wallMat = new THREE.MeshStandardMaterial({ 
+                color: wallColor,
+                roughness: 0.85,
+                side: THREE.DoubleSide 
+            });
+
+            const factoryGroupMesh = new THREE.Group();
+            const wallThickness = 1.2;
+
+            const frontWallGeo = new THREE.BoxGeometry(fWidth, fHeight, wallThickness);
+            const frontWall = new THREE.Mesh(frontWallGeo, wallMat);
+            frontWall.position.set(0, fHeight / 2, fLength / 2);
+            factoryGroupMesh.add(frontWall);
+
+            const backWall = new THREE.Mesh(frontWallGeo, wallMat);
+            backWall.position.set(0, fHeight / 2, -fLength / 2);
+            factoryGroupMesh.add(backWall);
+
+            const sideWallGeo = new THREE.BoxGeometry(wallThickness, fHeight, fLength - (wallThickness * 2));
+            const leftWall = new THREE.Mesh(sideWallGeo, wallMat);
+            leftWall.position.set(-fWidth / 2 + wallThickness / 2, fHeight / 2, 0);
+            factoryGroupMesh.add(leftWall);
+
+            const rightWall = new THREE.Mesh(sideWallGeo, wallMat);
+            rightWall.position.set(fWidth / 2 - wallThickness / 2, fHeight / 2, 0);
+            factoryGroupMesh.add(rightWall);
+
+            factoryGroupMesh.position.set(factoryX - (fWidth / 2), bridgeHeight, zPos);
+            scene.add(factoryGroupMesh);
+            factoryGroup.push({ mesh: factoryGroupMesh, baseZ: zPos, span: totalSpan });
+        }
+
+        // --- Grass Tiling via Segment Pools ---
+        const grassSegmentLength = 200.0;
+        const grassOverlap = 0.5;
+        const actualGrassSegLen = grassSegmentLength + grassOverlap;
+        const segmentsPerSide = Math.ceil(roadLength / grassSegmentLength) + 4;
+
+        const grassMatLeft = new THREE.MeshStandardMaterial({ 
+            map: grassTexture, color: 0x8D9E42, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: 4.0, polygonOffsetUnits: 4.0 
+        });
+        const grassMatMedian = new THREE.MeshStandardMaterial({ 
+            map: grassTexture, color: 0x8D9E42, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: 4.0, polygonOffsetUnits: 4.0 
+        });
+        const grassMatRight = new THREE.MeshStandardMaterial({ 
+            map: grassTexture, color: 0x8D9E42, roughness: 0.9, polygonOffset: true, polygonOffsetFactor: 4.0, polygonOffsetUnits: 4.0 
+        });
+
+        const tileScale = 15.0;
+        const updateMatRepeats = (mat, w, l) => {
+            if (mat.map) {
+                mat.map.wrapS = THREE.RepeatWrapping;
+                mat.map.wrapT = THREE.RepeatWrapping;
+                mat.map.repeat.set(w / tileScale, l / tileScale);
+                mat.map.needsUpdate = true;
+            }
+        };
+
+        const leftGrassSegments = [];
+        const medianGrassSegments = [];
+        const rightGrassSegments = [];
+
+        const leftSegGeo = new THREE.PlaneGeometry(outerGrassWidth, actualGrassSegLen);
+        const medianSegGeo = new THREE.PlaneGeometry(medianGrassWidth, actualGrassSegLen);
+        const rightSegGeo = new THREE.PlaneGeometry(outerGrassWidth, actualGrassSegLen);
+
+        const startZOffset = -roadLength / 2 - 400;
+
+        for (let i = 0; i < segmentsPerSide; i++) {
+            const zPos = startZOffset + (i * grassSegmentLength);
+
+            const lg = new THREE.Mesh(leftSegGeo, grassMatLeft);
+            lg.rotation.x = -Math.PI / 2;
+            lg.position.set(leftOuterGrassX, bridgeHeight - 0.02, zPos);
+            scene.add(lg);
+            leftGrassSegments.push(lg);
+
+            const mg = new THREE.Mesh(medianSegGeo, grassMatMedian);
+            mg.rotation.x = -Math.PI / 2;
+            mg.position.set(medianGrassX, bridgeHeight - 0.02, zPos);
+            scene.add(mg);
+            medianGrassSegments.push(mg);
+
+            const rg = new THREE.Mesh(rightSegGeo, grassMatRight);
+            rg.rotation.x = -Math.PI / 2;
+            rg.position.set(rightOuterGrassX, bridgeHeight - 0.02, zPos);
+            scene.add(rg);
+            rightGrassSegments.push(rg);
+        }
+
+        setTimeout(() => {
+            updateMatRepeats(grassMatLeft, outerGrassWidth, actualGrassSegLen);
+            updateMatRepeats(grassMatMedian, medianGrassWidth, actualGrassSegLen);
+            updateMatRepeats(grassMatRight, outerGrassWidth, actualGrassSegLen);
+        }, 150);
 
         // Bridge Support Pillars Pool
         const pillarMat = new THREE.MeshStandardMaterial({ color: 0x4d4d4d });
@@ -191,7 +484,7 @@
         const totalPillars = 40;
 
         for (let i = 0; i < totalPillars; i++) {
-            [-roadWidth / 2 + 2, roadWidth / 2 - 2].forEach(xOffset => {
+            [forwardRoadX - roadWidth/2 + 2, forwardRoadX + roadWidth/2 - 2, backwardRoadX - roadWidth/2 + 2, backwardRoadX + roadWidth/2 - 2].forEach(xOffset => {
                 const pillar = new THREE.Mesh(pillarGeo, pillarMat);
                 const zPos = (i * pillarSpacing) - (totalPillars * pillarSpacing / 2);
                 pillar.position.set(xOffset, bridgeHeight / 2, zPos);
@@ -200,18 +493,11 @@
             });
         }
 
-        // --- Infinite Ground Plane ---
-        const groundGeo = new THREE.PlaneGeometry(6000, 6000);
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0x111c16 });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        ground.position.set(0, 0, 0);
-        scene.add(ground);
+        // --- Lanes Setup ---
+        const playerLaneCoordinates = [forwardRoadX - 4.5, forwardRoadX, forwardRoadX + 4.5];
+        const oncomingLaneCoordinates = [backwardRoadX - 4.5, backwardRoadX, backwardRoadX + 4.5];
 
-        // --- Define Exact 3-Lane Coordinates ---
-        const laneCoordinates = [-4.5, 0.0, 4.5];
-
-        // --- Player Car Mesh ---
+        // Player Car Mesh
         const playerCar = new THREE.Group();
         const bodyGeo = new THREE.BoxGeometry(1.8, 1, 3.8);
         const bodyMat = new THREE.MeshStandardMaterial({ color: 0xffcc00 }); 
@@ -228,106 +514,173 @@
         playerCar.position.copy(car.position);
         scene.add(playerCar);
 
-        // --- AI Traffic Pool ---
+        // AI Traffic Pool (Same Direction - 20 cars)
         const aiCars = [];
         const aiCarGeo = new THREE.BoxGeometry(1.8, 1, 3.8);
         const aiColors = [0xcc3333, 0x3366cc, 0x228833, 0xcc6600, 0x9933cc, 0xe6e6e6];
 
-        laneCoordinates.forEach((laneX, laneIndex) => {
-            let currentZ = -40;
+        playerLaneCoordinates.forEach((laneX, laneIndex) => {
             for (let i = 0; i < 20; i++) {
                 const aiMat = new THREE.MeshStandardMaterial({ color: aiColors[Math.floor(Math.random() * aiColors.length)] });
                 const aiMesh = new THREE.Mesh(aiCarGeo, aiMat);
                 
-                aiMesh.position.set(laneX, bridgeHeight + 0.5, currentZ);
+                const initialZ = (i * 60) - 400 + (Math.random() * 20);
+                aiMesh.position.set(laneX, bridgeHeight + 0.5, initialZ);
                 scene.add(aiMesh);
                 
                 aiCars.push({
                     mesh: aiMesh,
-                    laneIndex: laneIndex,       
+                    laneIndex: laneIndex,        
                     currentLaneX: laneX,
                     targetLaneIndex: laneIndex,
                     targetLaneX: laneX,
                     isChangingLane: false,
                     laneChangeProgress: 0,
-                    forwardSpeed: (1.2 + Math.random() * 0.6) * 0.9 
+                    forwardSpeed: (1.2 + Math.random() * 0.6) * 0.9,
+                    isOncoming: false
                 });
-
-                currentZ -= 60; 
             }
         });
 
-        // --- Load Street Light .GLB Model ---
-        const lightPoleGroup = [];
-        const totalLightPolesPerSide = 35;
-        const gltfLoader = new THREE.GLTFLoader();
-        const modelUrl = './street_light.glb'; 
+        // AI Oncoming Traffic Pool (Opposite Direction - 45 cars)
+        oncomingLaneCoordinates.forEach((laneX, laneIndex) => {
+            for (let i = 0; i < 45; i++) {
+                const aiMat = new THREE.MeshStandardMaterial({ color: aiColors[Math.floor(Math.random() * aiColors.length)] });
+                const aiMesh = new THREE.Mesh(aiCarGeo, aiMat);
+                
+                const initialZ = (i * 35) - 600 + (Math.random() * 20);
+                aiMesh.position.set(laneX, bridgeHeight + 0.5, initialZ);
+                aiMesh.rotation.y = Math.PI; 
+                scene.add(aiMesh);
+                
+                aiCars.push({
+                    mesh: aiMesh,
+                    laneIndex: laneIndex,        
+                    currentLaneX: laneX,
+                    targetLaneIndex: laneIndex,
+                    targetLaneX: laneX,
+                    isChangingLane: false,
+                    laneChangeProgress: 0,
+                    forwardSpeed: (1.2 + Math.random() * 0.6) * 0.9,
+                    isOncoming: true
+                });
+            }
+        });
 
-        gltfLoader.load(modelUrl, (gltf) => {
+        // Load Zip Containing GLTF Street Light Model (Center Median Double-Sided)
+        const lightPoleGroup = [];
+        const totalLightPoles = 35;
+        const gltfLoader = new THREE.GLTFLoader();
+        const zipUrl = './double_stone_davit_streetlight.zip';
+
+        fetch(zipUrl)
+            .then(res => {
+                if (!res.ok) throw new Error('ZIP fetch failed');
+                return res.arrayBuffer();
+            })
+            .then(data => JSZip.loadAsync(data))
+            .then(zip => {
+                let gltfFileEntry = null;
+                let gltfFileName = '';
+                const imageFiles = {};
+
+                // Find files in zip
+                const filePromises = [];
+                zip.forEach((relativePath, zipEntry) => {
+                    if (zipEntry.dir) return;
+                    const lowerName = relativePath.toLowerCase();
+                    if (lowerName.endsWith('.gltf') || lowerName.endsWith('.glb')) {
+                        gltfFileEntry = zipEntry;
+                        gltfFileName = relativePath;
+                    } else if (lowerName.endsWith('.png') || lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) {
+                        filePromises.push(
+                            zipEntry.async('blob').then(blob => {
+                                const filename = relativePath.split('/').pop();
+                                imageFiles[filename] = URL.createObjectURL(blob);
+                            })
+                        );
+                    }
+                });
+
+                return Promise.all(filePromises).then(() => {
+                    if (!gltfFileEntry) throw new Error('No .gltf or .glb found inside zip');
+                    return gltfFileEntry.async('text').then(gltfText => {
+                        // Create custom manager for blob textures if gltf format
+                        const manager = new THREE.LoadingManager();
+                        manager.setURLModifier(url => {
+                            const filename = url.split('/').pop();
+                            if (imageFiles[filename]) {
+                                return imageFiles[filename];
+                            }
+                            return url;
+                        });
+
+                        const loader = new THREE.GLTFLoader(manager);
+                        loader.parse(gltfText, '', (gltf) => {
+                            setupStreetlights(gltf.scene);
+                        }, err => {
+                            console.error('GLTF Parse Error:', err);
+                            fallbackStreetlights();
+                        });
+                    });
+                });
+            })
+            .catch(err => {
+                console.warn('ZIP extraction failed, attempting direct load or fallback:', err);
+                // Fallback attempt to load directly if it was actually unzipped or direct glb
+                gltfLoader.load('./double_stone_davit_streetlight.gltf', (gltf) => {
+                    setupStreetlights(gltf.scene);
+                }, undefined, () => {
+                    fallbackStreetlights();
+                });
+            });
+
+        function setupStreetlights(baseModel) {
             document.getElementById('loader').style.opacity = '0';
             setTimeout(() => document.getElementById('loader').remove(), 500);
 
-            const baseModel = gltf.scene;
             baseModel.scale.set(
                 streetlightConfig.scale, 
                 streetlightConfig.scale, 
                 streetlightConfig.scale
             );
 
-            for (let i = 0; i < totalLightPolesPerSide; i++) {
-                const zOffset = (i * streetlightConfig.spacing) - (totalLightPolesPerSide * streetlightConfig.spacing / 2);
+            for (let i = 0; i < totalLightPoles; i++) {
+                const zOffset = (i * streetlightConfig.spacing) - (totalLightPoles * streetlightConfig.spacing / 2);
 
-                // --- LEFT INSTANCE ---
-                const leftInstance = baseModel.clone();
-                leftInstance.position.set(
-                    streetlightConfig.left.x, 
-                    bridgeHeight + streetlightConfig.left.y, 
-                    zOffset + streetlightConfig.left.z
+                const centerInstance = baseModel.clone();
+                centerInstance.position.set(
+                    medianGrassX + streetlightConfig.center.x, 
+                    bridgeHeight + streetlightConfig.center.y, 
+                    zOffset + streetlightConfig.center.z
                 );
-                leftInstance.rotation.y = THREE.MathUtils.degToRad(streetlightConfig.left.rotY);
-                scene.add(leftInstance);
-                lightPoleGroup.push({ mesh: leftInstance, baseZ: zOffset });
+                centerInstance.rotation.y = THREE.MathUtils.degToRad(streetlightConfig.center.rotY);
+                scene.add(centerInstance);
+                lightPoleGroup.push({ mesh: centerInstance, baseZ: zOffset });
+            }
+        }
 
-                // --- RIGHT INSTANCE ---
-                const rightInstance = baseModel.clone();
-                rightInstance.position.set(
-                    streetlightConfig.right.x, 
-                    bridgeHeight + streetlightConfig.right.y, 
-                    zOffset + streetlightConfig.right.z
-                );
-                rightInstance.rotation.y = THREE.MathUtils.degToRad(streetlightConfig.right.rotY);
-                scene.add(rightInstance);
-                lightPoleGroup.push({ mesh: rightInstance, baseZ: zOffset });
-            }
-        }, (xhr) => {
-            if (xhr.total) {
-                const percent = (xhr.loaded / xhr.total) * 100;
-                document.getElementById('loader').innerText = `Loading street_light.glb... ${Math.round(percent)}%`;
-            }
-        }, (error) => {
-            console.warn('GLB load error. Fallback procedural streetlights activated.', error);
-            document.getElementById('loader').innerText = 'Model failed to load. Check file name.';
+        function fallbackStreetlights() {
+            console.warn('Procedural center streetlights activated.');
+            document.getElementById('loader').innerText = 'Model failed to load. Using fallback.';
             setTimeout(() => document.getElementById('loader').remove(), 2000);
 
-            for (let i = 0; i < totalLightPolesPerSide; i++) {
-                const zOffset = (i * streetlightConfig.spacing) - (totalLightPolesPerSide * streetlightConfig.spacing / 2);
+            for (let i = 0; i < totalLightPoles; i++) {
+                const zOffset = (i * streetlightConfig.spacing) - (totalLightPoles * streetlightConfig.spacing / 2);
                 const poleMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.5 });
                 const postGeo = new THREE.BoxGeometry(0.3, 7, 0.3);
 
-                [streetlightConfig.left.x, streetlightConfig.right.x].forEach(xPos => {
-                    const post = new THREE.Mesh(postGeo, poleMat);
-                    post.position.set(xPos, bridgeHeight + streetlightConfig.left.y + 3.5, zOffset);
-                    scene.add(post);
-                    lightPoleGroup.push({ mesh: post, baseZ: zOffset });
-                });
+                const post = new THREE.Mesh(postGeo, poleMat);
+                post.position.set(medianGrassX, bridgeHeight + 3.5, zOffset);
+                scene.add(post);
+                lightPoleGroup.push({ mesh: post, baseZ: zOffset });
             }
-        });
+        }
 
-        // --- Game Loop ---
+        // Game Loop
         function animate() {
             requestAnimationFrame(animate);
 
-            // --- Poll Gamepad / Wheel / Pedals ---
             let throttleInput = 0;
             let brakeInput = 0;
             let steeringAxis = 0;
@@ -361,7 +714,6 @@
                 }
             }
 
-            // --- Acceleration & Braking ---
             let accelerating = keys['ArrowUp'] || keys['w'] || keys['W'] || throttleInput > 0.1;
             let reversing = keys['ArrowDown'] || keys['s'] || keys['S'] || brakeInput > 0.1;
 
@@ -382,7 +734,6 @@
                 if (car.speed < 0) car.speed = Math.min(0, car.speed + car.friction);
             }
 
-            // --- Stepped Easing Steering (0.5° -> 2° -> 5° max) ---
             let steerPressed = false;
             let steerDir = 0;
 
@@ -415,45 +766,70 @@
                 car.angle += steerDir * currentTurnRate * (car.speed !== 0 ? Math.sign(car.speed) : 1);
             }
 
-            // --- Movement Vector ---
             car.position.x -= Math.sin(car.angle) * car.speed;
             car.position.z -= Math.cos(car.angle) * car.speed;
 
             const margin = 0.5;
-            if (car.position.x < -roadWidth / 2 + margin) {
-                car.position.x = -roadWidth / 2 + margin;
+            const leftRoadBound = forwardRoadX - roadWidth / 2 + margin;
+            const rightRoadBound = forwardRoadX + roadWidth / 2 - margin;
+            if (car.position.x < leftRoadBound) {
+                car.position.x = leftRoadBound;
                 car.speed = 0;
             }
-            if (car.position.x > roadWidth / 2 - margin) {
-                car.position.x = roadWidth / 2 - margin;
+            if (car.position.x > rightRoadBound) {
+                car.position.x = rightRoadBound;
                 car.speed = 0;
             }
 
             playerCar.position.copy(car.position);
             playerCar.rotation.y = car.angle;
 
-            // --- Infinite Looping ---
+            skyDome.position.copy(car.position);
+
             const roadSpan = roadLength;
-            if (car.position.z < road.position.z - roadSpan / 2 + 500) {
-                road.position.z -= roadSpan;
-                leftFence.position.z = road.position.z;
-                rightFence.position.z = road.position.z;
-            } else if (car.position.z > road.position.z + roadSpan / 2 - 500) {
-                road.position.z += roadSpan;
-                leftFence.position.z = road.position.z;
-                rightFence.position.z = road.position.z;
+            if (car.position.z < roadForward.position.z - roadSpan / 2 + 500) {
+                roadForward.position.z -= roadSpan;
+                roadBackward.position.z -= roadSpan;
+                leftOldFence.position.z = roadForward.position.z;
+                forwardRightNewFence.position.z = roadForward.position.z;
+                backwardLeftNewFence.position.z = roadForward.position.z;
+                rightOldFence.position.z = roadForward.position.z;
+                leftOuterBgFence.position.z = roadForward.position.z;
+                rightOuterBgFence.position.z = roadForward.position.z;
+            } else if (car.position.z > roadForward.position.z + roadSpan / 2 - 500) {
+                roadForward.position.z += roadSpan;
+                roadBackward.position.z += roadSpan;
+                leftOldFence.position.z = roadForward.position.z;
+                forwardRightNewFence.position.z = roadForward.position.z;
+                backwardLeftNewFence.position.z = roadForward.position.z;
+                rightOldFence.position.z = roadForward.position.z;
+                leftOuterBgFence.position.z = roadForward.position.z;
+                rightOuterBgFence.position.z = roadForward.position.z;
+            }
+
+            // Endless Infinity Loop for Grass Segments with 0.5 Overlap
+            const totalSegSpan = segmentsPerSide * grassSegmentLength;
+            for (let i = 0; i < segmentsPerSide; i++) {
+                const segs = [leftGrassSegments[i], medianGrassSegments[i], rightGrassSegments[i]];
+                segs.forEach(seg => {
+                    if (seg.position.z > car.position.z + grassSegmentLength * 1.5) {
+                        seg.position.z -= totalSegSpan;
+                    } else if (seg.position.z < car.position.z - totalSegSpan + grassSegmentLength * 1.5) {
+                        seg.position.z += totalSegSpan;
+                    }
+                });
             }
 
             pillars.forEach(pillar => {
-                const totalSpan = totalPillars * pillarSpacing;
+                const totalSpanPillars = totalPillars * pillarSpacing;
                 if (pillar.position.z > car.position.z + 150) {
-                    pillar.position.z -= totalSpan;
-                } else if (pillar.position.z < car.position.z - totalSpan + 150) {
-                    pillar.position.z += totalSpan;
+                    pillar.position.z -= totalSpanPillars;
+                } else if (pillar.position.z < car.position.z - totalSpanPillars + 150) {
+                    pillar.position.z += totalSpanPillars;
                 }
             });
 
-            const totalSpanLights = totalLightPolesPerSide * streetlightConfig.spacing;
+            const totalSpanLights = totalLightPoles * streetlightConfig.spacing;
             lightPoleGroup.forEach(l => {
                 if (l.mesh.position.z > car.position.z + 200) {
                     l.mesh.position.z -= totalSpanLights;
@@ -462,9 +838,23 @@
                 }
             });
 
-            // --- AI Traffic ---
+            // Loop Buildings
+            factoryGroup.forEach(f => {
+                if (f.mesh.position.z > car.position.z + 600) {
+                    f.mesh.position.z -= f.span;
+                } else if (f.mesh.position.z < car.position.z - f.span + 600) {
+                    f.mesh.position.z += f.span;
+                }
+            });
+
             aiCars.forEach(aiCar => {
-                aiCar.mesh.position.z -= aiCar.forwardSpeed;
+                const laneCoords = aiCar.isOncoming ? oncomingLaneCoordinates : playerLaneCoordinates;
+
+                if (aiCar.isOncoming) {
+                    aiCar.mesh.position.z += aiCar.forwardSpeed;
+                } else {
+                    aiCar.mesh.position.z -= aiCar.forwardSpeed;
+                }
 
                 if (aiCar.isChangingLane) {
                     aiCar.laneChangeProgress += 0.022; 
@@ -474,26 +864,26 @@
                     aiCar.mesh.position.x = THREE.MathUtils.lerp(aiCar.currentLaneX, aiCar.targetLaneX, expT);
 
                     const laneChangeDirection = Math.sign(aiCar.targetLaneX - aiCar.currentLaneX);
-                    aiCar.mesh.rotation.y = -laneChangeDirection * 0.1 * Math.sin(t * Math.PI);
+                    aiCar.mesh.rotation.y = (aiCar.isOncoming ? Math.PI : 0) - laneChangeDirection * 0.1 * Math.sin(t * Math.PI);
 
                     if (aiCar.laneChangeProgress >= 1) {
                         aiCar.laneIndex = aiCar.targetLaneIndex;
                         aiCar.currentLaneX = aiCar.targetLaneX;
                         aiCar.mesh.position.x = aiCar.currentLaneX;
-                        aiCar.mesh.rotation.y = 0; 
+                        aiCar.mesh.rotation.y = aiCar.isOncoming ? Math.PI : 0; 
                         aiCar.isChangingLane = false;
                     }
                 } else {
                     aiCar.mesh.position.x = aiCar.currentLaneX;
-                    aiCar.mesh.rotation.y = 0;
+                    aiCar.mesh.rotation.y = aiCar.isOncoming ? Math.PI : 0;
 
                     if (Math.random() < 0.04) {
                         let obstacleAhead = null;
                         let minDistance = 30;
 
                         aiCars.forEach(other => {
-                            if (other !== aiCar && other.laneIndex === aiCar.laneIndex) {
-                                const dist = aiCar.mesh.position.z - other.mesh.position.z;
+                            if (other !== aiCar && other.isOncoming === aiCar.isOncoming && other.laneIndex === aiCar.laneIndex) {
+                                const dist = aiCar.isOncoming ? (other.mesh.position.z - aiCar.mesh.position.z) : (aiCar.mesh.position.z - other.mesh.position.z);
                                 if (dist > 0 && dist < minDistance) {
                                     minDistance = dist;
                                     obstacleAhead = other;
@@ -501,22 +891,29 @@
                             }
                         });
 
+                        if (!aiCar.isOncoming) {
+                            const distToPlayer = aiCar.mesh.position.z - car.position.z;
+                            if (distToPlayer < 0 && distToPlayer > -30 && Math.abs(aiCar.mesh.position.x - car.position.x) < 2.5) {
+                                obstacleAhead = playerCar;
+                            }
+                        }
+
                         const speedDifferenceThreshold = 0.12; 
-                        const obstacleSpeed = obstacleAhead ? obstacleAhead.forwardSpeed : 0;
+                        const obstacleSpeed = obstacleAhead === playerCar ? car.speed : (obstacleAhead ? obstacleAhead.forwardSpeed : 0);
 
                         if (obstacleAhead && (aiCar.forwardSpeed - obstacleSpeed >= speedDifferenceThreshold)) {
                             const adjacentLaneIndices = [];
                             if (aiCar.laneIndex > 0) adjacentLaneIndices.push(aiCar.laneIndex - 1);
-                            if (aiCar.laneIndex < laneCoordinates.length - 1) adjacentLaneIndices.push(aiCar.laneIndex + 1);
+                            if (aiCar.laneIndex < laneCoords.length - 1) adjacentLaneIndices.push(aiCar.laneIndex + 1);
 
                             adjacentLaneIndices.sort(() => Math.random() - 0.5);
 
                             for (let targetIdx of adjacentLaneIndices) {
-                                const targetX = laneCoordinates[targetIdx];
+                                const targetX = laneCoords[targetIdx];
                                 let targetLaneIsSafe = true;
 
                                 aiCars.forEach(other => {
-                                    if (other !== aiCar && other.laneIndex === targetIdx) {
+                                    if (other !== aiCar && other.isOncoming === aiCar.isOncoming && other.laneIndex === targetIdx) {
                                         const distZ = Math.abs(aiCar.mesh.position.z - other.mesh.position.z);
                                         if (distZ < 15) targetLaneIsSafe = false;
                                     }
@@ -534,19 +931,28 @@
                     }
                 }
 
-                if (aiCar.mesh.position.z > car.position.z + 40) {
-                    aiCar.mesh.position.z = car.position.z - 900 - Math.random() * 200;
-                    const randomLaneIdx = Math.floor(Math.random() * laneCoordinates.length);
+                // Seamless Recycling cleanly ahead/behind car bounds
+                if (!aiCar.isOncoming && aiCar.mesh.position.z > car.position.z + 80) {
+                    aiCar.mesh.position.z = car.position.z - 900 - Math.random() * 100;
+                    const randomLaneIdx = Math.floor(Math.random() * playerLaneCoordinates.length);
                     aiCar.laneIndex = randomLaneIdx;
-                    aiCar.currentLaneX = laneCoordinates[randomLaneIdx];
+                    aiCar.currentLaneX = playerLaneCoordinates[randomLaneIdx];
                     aiCar.targetLaneIndex = randomLaneIdx;
                     aiCar.targetLaneX = aiCar.currentLaneX;
                     aiCar.mesh.position.x = aiCar.currentLaneX;
                     aiCar.mesh.rotation.y = 0;
+                } else if (aiCar.isOncoming && aiCar.mesh.position.z < car.position.z - 120) {
+                    aiCar.mesh.position.z = car.position.z + 900 + Math.random() * 100;
+                    const randomLaneIdx = Math.floor(Math.random() * oncomingLaneCoordinates.length);
+                    aiCar.laneIndex = randomLaneIdx;
+                    aiCar.currentLaneX = oncomingLaneCoordinates[randomLaneIdx];
+                    aiCar.targetLaneIndex = randomLaneIdx;
+                    aiCar.targetLaneX = aiCar.currentLaneX;
+                    aiCar.mesh.position.x = aiCar.currentLaneX;
+                    aiCar.mesh.rotation.y = Math.PI;
                 }
             });
 
-            // Chase camera
             const camDist = 12;
             const camHeight = 4;
             camera.position.x = car.position.x - Math.sin(car.angle) * camDist;
